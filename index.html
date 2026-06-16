@@ -575,7 +575,9 @@ function render() {
           </div>
           <p class="sum-lede">${lede}</p>
           ${b.campaigns.length?`<div class="sum-campaigns">Campaigns — ${b.campaigns.map(c=>x(c)).join(' · ')}</div>`:''}
-          
+          <button class="battlecard-trigger" onclick="event.stopPropagation();openBattlecardById(${filtered.indexOf(b)})">
+            ⚡ Generate Battlecard
+          </button>
         </div>
       </div></td>`;
       tbody.appendChild(etr);
@@ -614,5 +616,431 @@ function x(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 init();
 </script>
+<!-- BATTLECARD MODAL -->
+<div id="bc-overlay" onclick="closeBattlecard()" style="display:none;position:fixed;inset:0;background:rgba(26,14,8,0.75);z-index:200;backdrop-filter:blur(2px)"></div>
+<div id="bc-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:201;width:min(720px,92vw);max-height:88vh;overflow-y:auto;background:#FAF7F0;border-top:3px solid var(--orange);">
+
+  <!-- Modal header -->
+  <div style="background:#1E0E06;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1">
+    <div>
+      <div style="font-family:var(--mono);font-size:8px;letter-spacing:0.2em;color:var(--orange);text-transform:uppercase;margin-bottom:4px">Battlecard</div>
+      <div id="bc-brand-name" style="font-family:var(--bask);font-weight:700;font-size:16px;color:white;line-height:1.2"></div>
+    </div>
+    <button onclick="closeBattlecard()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;line-height:1;padding:4px">✕</button>
+  </div>
+
+  <!-- Snapshot bar -->
+  <div id="bc-snapshot" style="background:#2C1810;padding:12px 22px;display:flex;gap:28px;border-bottom:1px solid rgba(255,255,255,0.07)"></div>
+
+  <!-- Publisher chips -->
+  <div id="bc-pub-row" style="padding:14px 22px;border-bottom:1px solid var(--rule);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+    <span style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;margin-right:4px">Spending on:</span>
+  </div>
+
+  <!-- AI content area -->
+  <div id="bc-content" style="padding:22px"></div>
+
+  <!-- Footer -->
+  <div style="padding:14px 22px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;background:#F5EFE6">
+    <span style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Reuters Advertising · EMEA Intelligence · AI-generated</span>
+    <button id="bc-regen" onclick="regenerateBattlecard()" style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:6px 12px;background:transparent;border:1px solid var(--rule);color:var(--muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--rule)';this.style.color='var(--muted)'">↺ Regenerate</button>
+  </div>
+</div>
+
+<style>
+.battlecard-trigger {
+  margin-top: 16px; padding: 9px 16px;
+  background: var(--orange); border: none; color: white;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; cursor: pointer; transition: opacity 0.15s;
+  display: block; width: 100%;
+}
+.battlecard-trigger:hover { opacity: 0.85; }
+.bc-section { margin-bottom: 22px; }
+.bc-section-head {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--orange);
+  border-bottom: 1px solid var(--rule); padding-bottom: 7px; margin-bottom: 12px;
+}
+.bc-pub-card {
+  margin-bottom: 14px; padding: 14px;
+  border-left: 3px solid var(--rule); background: white;
+}
+.bc-pub-card.hot { border-left-color: var(--orange); }
+.bc-pub-name {
+  font-family: var(--cond); font-weight: 700; font-size: 13px;
+  color: var(--green); margin-bottom: 6px;
+}
+.bc-pub-stat {
+  font-family: var(--mono); font-size: 9px; color: var(--muted);
+  letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.bc-pub-takedown {
+  font-family: var(--bask); font-style: italic; font-size: 12px;
+  color: var(--green); line-height: 1.65;
+}
+.bc-pub-takedown strong { font-style: normal; color: #1A0E08; }
+.bc-pitch-block {
+  background: #1E0E06; padding: 18px; margin-bottom: 14px;
+}
+.bc-pitch-block p {
+  font-family: var(--bask); font-size: 12px; line-height: 1.7;
+  color: rgba(255,255,255,0.82); margin-bottom: 10px;
+}
+.bc-pitch-block p:last-child { margin-bottom: 0; }
+.bc-pitch-block strong { color: white; font-style: normal; }
+.bc-objection {
+  padding: 10px 14px; background: white;
+  border-left: 2px solid #E0D6C8; margin-bottom: 8px;
+}
+.bc-obj-q { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--green); margin-bottom: 4px; }
+.bc-obj-a { font-family: var(--bask); font-style: italic; font-size: 11px; color: #5C3D28; line-height: 1.55; }
+.bc-snapshot-stat { text-align: center; }
+.bc-snapshot-n { font-family: var(--bask); font-weight: 700; font-size: 22px; color: var(--orange); letter-spacing: -0.02em; line-height: 1; }
+.bc-snapshot-l { font-family: var(--bask); font-style: italic; font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+.bc-loading {
+  padding: 40px 22px; text-align: center;
+}
+.bc-loading-dispatch { font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; color: var(--orange); text-transform: uppercase; margin-bottom: 10px; }
+.bc-loading-dots { font-family: var(--bask); font-style: italic; font-size: 14px; color: var(--muted); }
+.bc-tag {
+  display: inline-block; font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em;
+  padding: 2px 8px; text-transform: uppercase;
+  background: rgba(214,64,0,0.1); color: var(--orange); margin-right: 4px; margin-bottom: 4px;
+}
+</style>
+
+<script>
+let bcCurrentBrand = null;
+
+function openBattlecardById(idx) {
+  const brand = filtered[idx];
+  if (brand) openBattlecard(brand);
+}
+
+function openBattlecard(brand) {
+  bcCurrentBrand = brand;
+  document.getElementById('bc-overlay').style.display = 'block';
+  document.getElementById('bc-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  // Brand name
+  document.getElementById('bc-brand-name').textContent = brand.brand;
+
+  // Snapshot bar
+  const pubs = Object.entries(brand.publishers).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('bc-snapshot').innerHTML = `
+    <div class="bc-snapshot-stat"><div class="bc-snapshot-n">${brand.total_activity}</div><div class="bc-snapshot-l">competitor articles</div></div>
+    <div class="bc-snapshot-stat"><div class="bc-snapshot-n">${brand.recent_90d}</div><div class="bc-snapshot-l">last 90 days</div></div>
+    <div class="bc-snapshot-stat"><div class="bc-snapshot-n">${pubs.length}</div><div class="bc-snapshot-l">publishers</div></div>
+    <div class="bc-snapshot-stat"><div class="bc-snapshot-n">${brand.reuters_client ? '✓' : '—'}</div><div class="bc-snapshot-l">${brand.reuters_client ? 'Reuters client' : 'prospect'}</div></div>`;
+
+  // Publisher chips
+  const pubRow = document.getElementById('bc-pub-row');
+  const chips = pubs.map(([p,n]) => `<span style="font-family:var(--mono);font-size:9px;padding:3px 9px;background:#2C1810;color:rgba(255,255,255,0.8);letter-spacing:0.06em">${p} <span style="color:var(--orange)">${n}</span></span>`).join('');
+  pubRow.innerHTML = `<span style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;margin-right:4px">Spending on:</span>${chips}`;
+
+  generateBattlecard(brand);
+}
+
+function closeBattlecard() {
+  document.getElementById('bc-overlay').style.display = 'none';
+  document.getElementById('bc-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function regenerateBattlecard() {
+  if (bcCurrentBrand) generateBattlecard(bcCurrentBrand);
+}
+
+function generateBattlecard(brand) {
+  const content = document.getElementById('bc-content');
+  const pubs = Object.entries(brand.publishers).sort((a,b)=>b[1]-a[1]);
+  const isClient = brand.reuters_client;
+  const isSinglePub = pubs.length === 1;
+  const pitchAngle = isClient ? 'upsell' : isSinglePub ? 'diversification' : 'gap-fill';
+
+  // ── PUBLISHER INTELLIGENCE DATABASE ──────────────────────────────────────
+  const PUB_DB = {
+    'Financial Times': {
+      color: '#FFF1E5',
+      weakness: 'UK/Europe-centric readership — limited reach into MENA, APAC, and the Americas.',
+      reuters_counter: 'FT delivers credibility within Europe, but Reuters reaches 10.7M EMEA users <em>plus</em> 11.7M APAC and 32M Americas — all in one buy. Reuters is also ranked #1 for trustworthiness globally (5.38 vs FT\'s 5.31, Ipsos 2023), so you get equal editorial authority with far greater geographic range.',
+      killer_line: 'FT is the best publisher in London. Reuters is the best publisher on Earth.',
+      objection: 'We already work with the FT.'
+    },
+    'Bloomberg': {
+      color: '#F0F4FF',
+      weakness: 'Finance-professional silo — narrow audience skewing heavily to markets and banking, US-dominated editorial identity.',
+      reuters_counter: 'Bloomberg reaches financial professionals deeply but narrowly. Reuters reaches 7.4M finance professionals <em>and</em> 12M tech decision-makers <em>and</em> 1.4M government decision-makers — the full suite of stakeholders your brand needs to influence, not just the trading floor.',
+      killer_line: 'Bloomberg tells markets what happened. Reuters tells the world why it matters.',
+      objection: 'Bloomberg has the finance audience we need.'
+    },
+    'Forbes': {
+      color: '#F5FFF5',
+      weakness: 'US-centric, consumer-skewed, SEO-driven format — low trust score (5.21) and limited premium B2B credibility in EMEA.',
+      reuters_counter: 'Forbes delivers volume and SEO rank. Reuters delivers quality and trust — ranked #1 globally (5.38 vs Forbes 5.21). For a brand targeting EMEA business leaders, CFOs and policy makers, Forbes reaches the wrong people at the wrong scale. Reuters\' 10.7M EMEA monthly users are the decision-makers Forbes can\'t reliably reach.',
+      killer_line: 'Forbes gets you seen. Reuters gets you believed.',
+      objection: 'Forbes gives us the article volume we need.'
+    },
+    'The Economist': {
+      color: '#FFF8F0',
+      weakness: 'Long-form weekly format only — no breaking news, no content studio, limited MENA distribution, and no multi-platform reach.',
+      reuters_counter: 'The Economist has extraordinary editorial prestige but a constrained format and audience. Reuters delivers equivalent trust (5.29 vs 5.38 Reuters) with a full-service content studio, daily publishing cadence, global wire distribution, 50+ events per year, and 54M monthly users versus The Economist\'s 4-5M. Same room, much bigger table.',
+      killer_line: 'The Economist is read once a week. Reuters is read the moment the story breaks.',
+      objection: 'The Economist gives us the prestige positioning we want.'
+    },
+    'Wall Street Journal': {
+      color: '#F8F8FF',
+      weakness: 'US-first editorial identity under Murdoch ownership — creates perception issues in EMEA markets and limited organic European audience.',
+      reuters_counter: 'WSJ is the gold standard for US business readers. But for a brand with EMEA ambitions, Reuters\' editorial independence — protected by the Reuters Trust Principles since 1941 — resonates more deeply with European and MENA audiences who are sensitive to American media ownership. Reuters reaches 10.7M EMEA users vs WSJ\'s predominantly US base.',
+      killer_line: 'WSJ is America\'s business paper. Reuters is the world\'s news agency.',
+      objection: 'WSJ has the premium US business audience we\'re targeting.'
+    },
+    'Politico Europe': {
+      color: '#F5F5FF',
+      weakness: 'Narrow Brussels policy bubble — reaches EU insiders and lobbyists but not broader business decision-makers, investors or global executives.',
+      reuters_counter: 'Politico Europe is essential for EU regulatory affairs — but if the goal is reaching investors, senior executives and international policy-makers beyond Brussels, Reuters\' 1.4M government decision-makers and 64M business decision-makers are the fuller audience. Reuters also covers the policy environment with the same depth but within a global news context that Politico can\'t match.',
+      killer_line: 'Politico tells Brussels. Reuters tells the world.',
+      objection: 'We need to reach EU policy audiences specifically.'
+    },
+    'Euronews': {
+      color: '#F0FFFA',
+      weakness: 'Broadcast/TV audience — European consumer viewers, not investor-class or business decision-makers, and significantly lower trust positioning than print-heritage news brands.',
+      reuters_counter: 'Euronews reaches European consumers at volume, but Reuters reaches 64M business decision-makers and 7.4M finance professionals globally. For investment promotion, trade development or B2B messaging, the Euronews audience simply isn\'t the room your brand needs to be in — Reuters puts you in front of the people who make the decisions.',
+      killer_line: 'Euronews reaches European viewers. Reuters reaches global decision-makers.',
+      objection: 'Euronews gives us broad European reach at good value.'
+    },
+    'CNBC International': {
+      color: '#FFFAF0',
+      weakness: 'TV/video format constrains dwell time and content depth — low average session duration and primarily US-anchored programming identity.',
+      reuters_counter: 'CNBC delivers financial news to a TV audience. Reuters delivers it to readers with an average 3.28-minute session — people who are engaged and seeking depth. Reuters.com also reaches 10.7M EMEA users monthly versus CNBC International\'s predominantly North American viewership. For complex brand storytelling, a reader beats a viewer every time.',
+      killer_line: 'CNBC gets you 30 seconds. Reuters gives you 3 minutes.',
+      objection: 'CNBC has strong financial news brand recognition.'
+    },
+    'CNN International': {
+      color: '#FFF5F5',
+      weakness: 'General consumer news audience — broad but not business-decision-maker focused, and declining trust in professional segments post-2022.',
+      reuters_counter: 'CNN International reaches a wide consumer audience globally but skews towards news consumption rather than business action. Reuters\' 64M business decision-makers are actively using news to inform decisions — a fundamentally different mindset and intent. For B2B messaging, that distinction matters enormously to campaign performance.',
+      killer_line: 'CNN informs the public. Reuters informs the people who shape it.',
+      objection: 'CNN International gives us global TV reach.'
+    },
+    'Fortune': {
+      color: '#FFFBF0',
+      weakness: 'US-centric business lifestyle — primarily American C-suite audience, limited organic EMEA penetration, and brand-studio format lacks editorial credibility of a newsroom.',
+      reuters_counter: 'Fortune is a respected US business brand but its audience is predominantly American and its content studio model lacks the newsroom credibility that Reuters Plus provides. Reuters combines the authority of 2,500 journalists across 200 countries with full content studio capability — meaning your brand appears alongside trusted journalism, not alongside advertising.',
+      killer_line: 'Fortune is America\'s business magazine. Reuters is the world\'s news wire.',
+      objection: 'Fortune gives us good C-suite access.'
+    },
+    'Washington Post': {
+      color: '#F5FBFF',
+      weakness: 'US domestic-focused editorial identity — predominantly American readership with limited international business decision-maker reach.',
+      reuters_counter: 'The Washington Post has strong US editorial authority but a predominantly domestic audience. Reuters reaches 54M monthly users across all geographies, with 10.7M in EMEA alone — and with editorial independence that resonates globally, not just in Washington.',
+      killer_line: 'The Post covers the world from Washington. Reuters covers it from everywhere.',
+      objection: 'The Washington Post has the quality journalism environment we want.'
+    },
+    'BBC': {
+      color: '#F5F5FF',
+      weakness: 'Consumer news audience — broad reach but not professional/business decision-maker focused, and Storyworks branded content is less prominent than Reuters Plus editorial integration.',
+      reuters_counter: 'BBC Storyworks offers a trusted consumer environment, but Reuters\' 64M business decision-makers represent a far more commercially valuable audience for B2B messaging. Reuters\' trust score also leads globally (5.38 vs BBC at approximately 5.3) and its Reuters Plus studio delivers content that appears alongside hard financial and business news — the mindset your audience is already in.',
+      killer_line: 'BBC reaches Britain and the world. Reuters reaches the world\'s decision-makers.',
+      objection: 'BBC gives us a trusted, globally recognised environment.'
+    },
+    'The Atlantic': {
+      color: '#FFF8F5',
+      weakness: 'Long-form cultural/ideas publication — thoughtful readership but not business decision-makers, and primarily US-based audience with limited EMEA penetration.',
+      reuters_counter: 'The Atlantic delivers a quality editorial environment for ideas and culture, but it\'s not where business decisions get made. Reuters reaches 7.4M finance professionals, 12M tech decision-makers and 64M BDMs globally — people reading with commercial intent. If the goal is influencing business outcomes in EMEA, The Atlantic is the wrong room.',
+      killer_line: 'The Atlantic influences opinions. Reuters influences decisions.',
+      objection: 'The Atlantic gives us a premium, thoughtful editorial environment.'
+    }
+  };
+
+  // ── SECTOR-AWARE PITCH INTELLIGENCE ──────────────────────────────────────
+  const SECTOR_PITCH = {
+    'Banking, Finance & Insurance': {
+      audience_stat: '7.4M finance professionals and 18M C-suite/Senior Management globally',
+      why_reuters: 'Reuters is where financial decision-makers go first for market intelligence — your branded content sits inside that intent, not alongside it.',
+      sector_edge: 'Reuters Breakingviews provides daily financial commentary to 100,000+ subscribers globally. No other publisher puts your brand inside that analytical mindset.'
+    },
+    'Technology': {
+      audience_stat: '12M tech decision-makers and 18M IT professionals globally',
+      why_reuters: 'Reuters covers AI, cloud, cybersecurity and digital transformation as hard news — giving tech brands the credibility of appearing alongside authoritative reporting, not lifestyle content.',
+      sector_edge: 'Reuters Momentum AI events series connects tech brands directly with enterprise AI decision-makers across London, San Jose and Singapore.'
+    },
+    'Trade & Investment': {
+      audience_stat: '1.4M government decision-makers and 443K FDI professionals globally',
+      why_reuters: 'Investment decisions begin with trusted intelligence. Reuters is the source investors, diplomats and finance ministers read before they act — putting your investment story in front of the people who matter.',
+      sector_edge: 'Reuters reaches FDI professionals in 200 countries — no other publisher can claim genuine global distribution for investment promotion messaging.'
+    },
+    'Government': {
+      audience_stat: '1.4M government decision-makers and 14M opinion leaders globally',
+      why_reuters: 'Government communicators need credibility and reach simultaneously. Reuters\' Trust Principles — independent since 1941 — make it the only publisher that policy audiences and international media trust equally.',
+      sector_edge: 'Reuters wire syndication means government messaging on Reuters.com is picked up and redistributed by thousands of downstream media partners globally.'
+    },
+    'Energy & Utilities': {
+      audience_stat: '32M BDMs passionate about sustainability and 64M business decision-makers globally',
+      why_reuters: 'Energy transition, geopolitics and commodity markets are Reuters\' core editorial territory — your brand appears in the publication audiences already trust for energy intelligence.',
+      sector_edge: 'Reuters Events covers energy transition, renewables and oil & gas across 14 industry verticals — offering event sponsorship alongside branded content for a full ecosystem play.'
+    },
+    'Industrial': {
+      audience_stat: '64M business decision-makers and 5M logistics professionals globally',
+      why_reuters: 'Industrial brands need to reach supply chain decision-makers, procurement leaders and policy-makers simultaneously. Reuters does all three.',
+      sector_edge: 'Reuters\' coverage of trade, commodities and manufacturing makes it the natural editorial home for industrial brand stories about efficiency, sustainability and transformation.'
+    },
+    'Business & Professional Services': {
+      audience_stat: '64M business decision-makers and 18M C-suite/Senior Management globally',
+      why_reuters: 'Professional services firms sell credibility — and no placement reinforces that credibility more than Reuters, the #1 most trusted global media brand.',
+      sector_edge: 'Reuters Breakingviews and industry vertical coverage places professional services content alongside the analytical commentary that senior decision-makers actively seek out.'
+    }
+  };
+
+  const sectorData = SECTOR_PITCH[brand.sector] || {
+    audience_stat: '64M business decision-makers and 97M influential professionals globally',
+    why_reuters: 'Reuters puts your brand in front of the decision-makers who are already engaged with trusted global news — not scrolling past advertising.',
+    sector_edge: 'Reuters Plus combines newsroom authority with a full creative studio — your brand story told with the credibility of the world\'s leading news wire.'
+  };
+
+  // ── ANGLE-SPECIFIC COPY ───────────────────────────────────────────────────
+  const topPub = pubs[0][0];
+  const topPubCount = pubs[0][1];
+  const totalPubs = pubs.length;
+
+  const ANGLES = {
+    upsell: {
+      label: 'Upsell · existing client',
+      hook: `${brand.brand} is already investing in Reuters — this is the case for going deeper.`,
+      one_liner: `You've seen what Reuters delivers. The question is why you're giving ${topPubCount} articles to ${topPub} that could be working harder on Reuters.`,
+      summary: `${brand.brand} is a Reuters client with ${brand.total_activity} additional articles currently running across competitor publishers — including ${topPubCount} on ${topPub}. The existing Reuters relationship proves the value proposition works. The opportunity now is consolidation: shifting a portion of that competitor spend to Reuters, where the audience quality, trust score, and EMEA reach are demonstrably stronger.`
+    },
+    diversification: {
+      label: 'Diversification pitch',
+      hook: `${brand.brand} is putting all ${brand.total_activity} articles into ${topPub} — that's concentration risk, not a media strategy.`,
+      one_liner: `${topPubCount} articles on ${topPub} and zero on Reuters. Your decision-makers read both — but only one of them is #1 for global trust.`,
+      summary: `${brand.brand} is running an exclusively single-publisher strategy — ${topPubCount} articles on ${topPub} over the past year. Single-publisher concentration is both a risk and a missed opportunity: risk because any change in that publisher relationship disrupts all brand content; opportunity because Reuters reaches ${sectorData.audience_stat} that a single publisher cannot cover alone.`
+    },
+    'gap-fill': {
+      label: 'Gap-fill · multi-publisher',
+      hook: `${brand.brand} is buying ${totalPubs} publishers and missing the one that reaches the most decision-makers globally.`,
+      one_liner: `You're spending across ${totalPubs} publishers. Reuters is the one gap in a strategy that's otherwise trying to be everywhere.`,
+      summary: `${brand.brand} already understands multi-publisher strategy — ${brand.total_activity} articles across ${totalPubs} outlets over the past year. But the portfolio has a visible gap: Reuters, which reaches ${sectorData.audience_stat}, is absent. Adding Reuters doesn't duplicate existing spend — it fills the specific gap in global wire distribution and decision-maker trust that no other publisher on the current list covers.`
+    }
+  };
+
+  const angle = ANGLES[pitchAngle];
+
+  // ── BUILD PUBLISHER TAKEDOWNS ─────────────────────────────────────────────
+  const takedowns = pubs.slice(0, 5).map(([pub, count]) => {
+    const db = PUB_DB[pub] || {
+      color: '#FAF7F0',
+      weakness: 'Limited global reach and audience specificity compared to Reuters.',
+      reuters_counter: 'Reuters reaches 97M global influential professionals with the highest trust score of any global media brand — a broader, more credible platform.',
+      killer_line: 'Any publisher can reach an audience. Reuters reaches the right one.',
+      objection: `We have an existing relationship with ${pub}.`
+    };
+    return { pub, count, ...db };
+  });
+
+  // ── OBJECTION HANDLERS ────────────────────────────────────────────────────
+  const objections = [
+    {
+      q: takedowns[0] ? takedowns[0].objection : 'We have existing publisher commitments.',
+      a: takedowns[0] ? takedowns[0].reuters_counter : 'Reuters doesn\'t replace existing relationships — it fills the gaps they leave in global reach and decision-maker trust.'
+    },
+    {
+      q: 'Our budget is committed for this year.',
+      a: `Branded content with ${topPub} runs on an annual cycle — but Reuters campaigns can be activated in weeks, not months. A pilot campaign now builds the relationship and evidence base for a larger FY commitment. We can structure a proposal that works around your current commitments.`
+    },
+    {
+      q: 'We need to demonstrate ROI before expanding budgets.',
+      a: `Reuters Plus campaigns are fully trackable — dwell time, brand recall uplift, audience quality metrics and lead generation data are all available. Our ${sectorData.audience_stat.split(' and ')[0]} gives you a verified, premium audience against which to measure performance. We can propose an initial campaign with agreed KPIs built in from day one.`
+    },
+    {
+      q: 'We\'re happy with our current media mix.',
+      a: `The Contalto data shows your current mix is active — and effective enough to keep spending on. The question isn't whether to change it, it's whether it's complete. Reuters is currently the only publisher in the top tier of global business media that isn't in your plan.`
+    }
+  ];
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  const angleLabels = { upsell: 'Upsell · existing client', diversification: 'Diversification pitch', 'gap-fill': 'Gap-fill · multi-publisher' };
+
+  let html = '';
+
+  // Hook + one-liner
+  html += `
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--rule)">
+      <span class="bc-tag">${angle.label}</span>
+      ${isClient ? '<span class="bc-tag" style="background:rgba(214,64,0,0.15)">Existing client</span>' : ''}
+      <p style="font-family:var(--bask);font-weight:700;font-size:15px;color:#1A0E08;line-height:1.35;margin-top:12px">"${angle.one_liner}"</p>
+    </div>`;
+
+  // Summary
+  html += `
+    <div class="bc-section">
+      <div class="bc-section-head">Intelligence summary</div>
+      <div class="bc-pitch-block">
+        <p>${angle.summary}</p>
+        <p>${sectorData.why_reuters}</p>
+        <p><strong>Sector edge:</strong> ${sectorData.sector_edge}</p>
+      </div>
+    </div>`;
+
+  // Publisher takedowns
+  html += `<div class="bc-section"><div class="bc-section-head">Publisher takedowns</div>`;
+  takedowns.forEach(t => {
+    html += `
+      <div class="bc-pub-card ${t.count > 10 ? 'hot' : ''}" style="background:${t.color}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <div class="bc-pub-name">${t.pub}</div>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--orange);font-weight:600">${t.count} article${t.count !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="bc-pub-stat">⚠ ${t.weakness}</div>
+        <div class="bc-pub-takedown">${t.reuters_counter}</div>
+        <div style="margin-top:10px;padding:8px 12px;background:rgba(214,64,0,0.06);border-left:2px solid var(--orange)">
+          <div style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;color:var(--orange);text-transform:uppercase;margin-bottom:3px">Use in the room</div>
+          <div style="font-family:var(--bask);font-style:italic;font-size:11px;color:#1A0E08;line-height:1.5">"${t.killer_line}"</div>
+        </div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  // Reuters advantage block
+  html += `
+    <div class="bc-section">
+      <div class="bc-section-head">Why Reuters wins</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0">
+        ${[
+          ['#1 Global Trust', 'Trustworthiness score 5.38 — above FT (5.31), Economist (5.29), Bloomberg (5.13) and Forbes (5.21). Ipsos Affluent Global 2023.'],
+          ['97M Reach', '54M monthly users on Reuters.com. 10.7M EMEA, 11.7M APAC, 32M Americas. Plus 43M social followers.'],
+          ['64M BDMs', '7.4M finance professionals, 12M tech decision-makers, 1.4M government officials — the full stakeholder map.'],
+          ['2,500 Journalists', 'In 200+ countries. No other publisher provides this depth of editorial authority across every market your brand operates in.'],
+          ['Reuters Plus', 'Full-service content studio: strategy, creation, research, design, events. Newsroom authority + agency capability in one.'],
+          ['Editorial Independence', 'The Reuters Trust Principles have protected editorial integrity since 1941 — the backbone of the trust score advantage.']
+        ].map(([title, body]) => `
+          <div style="padding:12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--orange);margin-bottom:5px">${title}</div>
+            <div style="font-family:var(--cond);font-size:11px;color:#1A0E08;line-height:1.5">${body}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // Objection handlers
+  html += `<div class="bc-section"><div class="bc-section-head">Objection handlers</div>`;
+  objections.forEach(o => {
+    html += `
+      <div class="bc-objection">
+        <div class="bc-obj-q">❝ ${o.q}</div>
+        <div class="bc-obj-a">${o.a}</div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  content.innerHTML = html;
+  document.getElementById('bc-regen').disabled = false;
+}
+
+// Close on Escape
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeBattlecard(); });
+</script>
+
 </body>
 </html>
