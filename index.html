@@ -394,6 +394,14 @@ td { padding: 12px 14px; vertical-align: top; }
       </div>
     </div>
 
+    <div>
+      <div class="filter-label">View</div>
+      <div class="rec-group">
+        <button class="rec-btn" data-view="hot" id="view-hot-btn" onclick="setView('hot')">🔥 Hot prospects</button>
+        <button class="rec-btn active" data-view="all" id="view-all-btn" onclick="setView('all')">All brands</button>
+      </div>
+    </div>
+
     <div class="stat-callout">
       <div class="stat-callout-n" id="stat-n">—</div>
       <div class="stat-callout-l">brands matched</div>
@@ -403,11 +411,6 @@ td { padding: 12px 14px; vertical-align: top; }
   </aside>
 
   <main>
-    <div class="toolbar">
-      <span class="results-label" id="results-label"></span>
-      <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
-    </div>
-
     <div class="table-outer">
       <div class="table-wrap">
         <table>
@@ -419,6 +422,7 @@ td { padding: 12px 14px; vertical-align: top; }
               <th onclick="sortBy('total_activity')" id="th-total_activity" class="sorted">Articles <span class="arr">↓</span></th>
               <th onclick="sortBy('recent_90d')" id="th-recent_90d">Last 90d <span class="arr">↕</span></th>
               <th onclick="sortBy('last_active')" id="th-last_active">Last seen <span class="arr">↕</span></th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -441,6 +445,25 @@ let all=[], filtered=[];
 let sort={ field:'total_activity', dir:'desc' };
 let page=1; const PER=30;
 let expanded=null, geo='', rec='all', clientFilter='all';
+
+function setView(v) {
+  document.getElementById('view-hot-btn').classList.toggle('active', v === 'hot');
+  document.getElementById('view-all-btn').classList.toggle('active', v === 'all');
+  // Set recency and client filters to match
+  if (v === 'hot') {
+    // Hot prospects: active 90d + prospects only + EMEA geo
+    document.querySelectorAll('.rec-btn[data-recency]').forEach(b => b.classList.toggle('active', b.dataset.recency === 'hot'));
+    document.querySelectorAll('.rec-btn[data-client]').forEach(b => b.classList.toggle('active', b.dataset.client === 'prospects'));
+    document.querySelectorAll('.geo-btn').forEach(b => b.classList.toggle('active', b.dataset.geo === 'EMEA'));
+    rec = 'hot'; clientFilter = 'prospects'; geo = 'EMEA';
+  } else {
+    document.querySelectorAll('.rec-btn[data-recency]').forEach(b => b.classList.toggle('active', b.dataset.recency === 'all'));
+    document.querySelectorAll('.rec-btn[data-client]').forEach(b => b.classList.toggle('active', b.dataset.client === 'all'));
+    document.querySelectorAll('.geo-btn').forEach(b => b.classList.toggle('active', b.dataset.geo === ''));
+    rec = 'all'; clientFilter = 'all'; geo = '';
+  }
+  filter();
+}
 
 function init() {
   all = DATA.brands; filtered=[...all];
@@ -470,7 +493,7 @@ function init() {
     if(b.dataset.client) clientFilter=b.dataset.client;
     filter();
   }));
-  render();
+  setView('hot');
 }
 
 function filter() {
@@ -494,9 +517,8 @@ function resetFilters() {
   document.getElementById('search').value='';
   document.getElementById('sector-filter').value='';
   document.getElementById('publisher-filter').value='';
-  document.querySelectorAll('.geo-btn').forEach(b=>b.classList.toggle('active',b.dataset.geo===''));
-  document.querySelectorAll('.rec-btn').forEach(b=>b.classList.toggle('active',b.dataset.recency==='all'||b.dataset.client==='all'));
-  geo=''; rec='all'; clientFilter='all'; filtered=[...all]; doSort(); page=1; expanded=null; render();
+  page=1; expanded=null;
+  setView('hot');
 }
 
 function sortBy(f) {
@@ -518,7 +540,6 @@ function doSort() {
 function render() {
   const n=filtered.length;
   document.getElementById('stat-n').textContent=n.toLocaleString();
-  document.getElementById('results-label').innerHTML=`Showing <strong>${Math.min(n,PER)}</strong> of <strong>${n}</strong> brands`;
   const start=(page-1)*PER, slice=filtered.slice(start,start+PER);
   const tbody=document.getElementById('tbody'); tbody.innerHTML='';
   const empty=document.getElementById('empty-state');
@@ -538,7 +559,10 @@ function render() {
       <td><div class="pub-chips">${Object.entries(b.publishers).sort((a,c)=>c[1]-a[1]).slice(0,3).map(([p])=>`<span class="pub-chip">${x(p)}</span>`).join('')}</div></td>
       <td class="count-cell">${b.total_activity}</td>
       <td><span class="badge ${bc(b.recent_90d)}"><span class="dot"></span>${b.recent_90d}</span></td>
-      <td class="date-cell">${b.last_active}</td>`;
+      <td class="date-cell">${b.last_active}</td>
+      <td style="vertical-align:middle;padding:8px 10px">
+        <button class="bc-row-btn" onclick="event.stopPropagation();openBattlecardById(${filtered.indexOf(b)})">⚡ Battlecard</button>
+      </td>`;
     tr.addEventListener('click',()=>{ expanded=expanded===b.brand?null:b.brand; render(); });
     tbody.appendChild(tr);
 
@@ -551,15 +575,13 @@ function render() {
       const artsH=!arts.length
         ?'<p style="font-family:var(--bask);font-style:italic;font-size:11px;color:rgba(255,255,255,0.2)">No articles available.</p>'
         :'<div class="art-list">'+arts.map(a=>`<div class="art-item"><div style="flex:1;min-width:0"><a href="${x(a.url)}" target="_blank" rel="noopener">${x(a.title||'View article')}</a><div class="art-meta">${x(a.publisher)} · ${x(a.date)}</div></div><span class="art-arr">↗</span></div>`).join('')+'</div>';
-      const lede=b.recent_90d>0
-        ?`<strong>${b.recent_90d} articles in the last 90 days</strong> — actively spending now.`
-        :`Last seen <strong>${b.last_active}</strong>. No recent activity.`;
+
 
       etr.innerHTML=`<td colspan="6"><div class="exp-inner">
         <div>
           <div class="exp-head">Publisher breakdown</div>
           ${barsH}
-          <div style="margin-top:14px"><div class="exp-head">Topics</div>${b.top_topics.map(t=>`<span class="topic-tag">${x(t)}</span>`).join('')}</div>
+
         </div>
         <div>
           <div class="exp-head">Recent articles</div>
@@ -573,11 +595,9 @@ function render() {
             <div><div class="sum-stat-n">${b.total_activity}</div><div class="sum-stat-l">articles<br>this year</div></div>
             <div><div class="sum-stat-n">${Object.keys(b.publishers).length}</div><div class="sum-stat-l">publishers<br>reached</div></div>
           </div>
-          <p class="sum-lede">${lede}</p>
-          ${b.campaigns.length?`<div class="sum-campaigns">Campaigns — ${b.campaigns.map(c=>x(c)).join(' · ')}</div>`:''}
-          <button class="battlecard-trigger" onclick="event.stopPropagation();openBattlecardById(${filtered.indexOf(b)})">
-            ⚡ Generate Battlecard
-          </button>
+
+
+
         </div>
       </div></td>`;
       tbody.appendChild(etr);
@@ -643,12 +663,18 @@ init();
   <!-- Footer -->
   <div style="padding:14px 22px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;background:#F5EFE6">
     <span style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Reuters Advertising · EMEA Intelligence · AI-generated</span>
-    <button id="bc-regen" onclick="regenerateBattlecard()" style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:6px 12px;background:transparent;border:1px solid var(--rule);color:var(--muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--rule)';this.style.color='var(--muted)'">↺ Regenerate</button>
+
   </div>
 </div>
 
 <style>
-.battlecard-trigger {
+.bc-row-btn {
+  padding: 5px 10px; background: var(--orange); border: none; color: white;
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer; white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.bc-row-btn:hover { opacity: 0.82; }
   margin-top: 16px; padding: 9px 16px;
   background: var(--orange); border: none; color: white;
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
@@ -1035,7 +1061,6 @@ function generateBattlecard(brand) {
   html += `</div>`;
 
   content.innerHTML = html;
-  document.getElementById('bc-regen').disabled = false;
 }
 
 // Close on Escape
