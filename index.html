@@ -378,19 +378,34 @@ td { padding: 12px 14px; vertical-align: top; }
       <div>
         <div style="font-family:var(--mono);font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--orange);border-bottom:1px solid var(--rule);padding-bottom:7px;margin-bottom:12px">Filters</div>
         <div style="display:flex;flex-direction:column;gap:9px">
-          ${[
-            ['Search', 'Find a brand by name. Also matches on parent advertiser name.'],
-            ['Geography', 'Filter by where the brand is spending — derived from publisher selection, not the brand\'s HQ country. Europe = FT, Economist, Politico Europe. MENA = Gulf publishers. US = WSJ, Forbes, Bloomberg etc.'],
-            ['Sector', 'Filter to a specific sector. Core B2B sectors are shown in the Hot Prospects default. Flagged sectors (Travel, Luxury, NGOs etc.) are visible when browsing all brands.'],
-            ['Publisher', 'Show only brands spending on a specific competitor publisher.'],
-            ['Recency', 'All time = full 12-month dataset. Active 90d = brands that have published at least one article in the last 90 days.'],
-            ['Reuters relationship', 'Clients = brands already working with Reuters. Prospects = brands not yet on Reuters. All = everything.'],
-            ['View', 'Hot Prospects = pre-set EMEA + core sectors + active 90d + prospects only. All brands = full unfiltered dataset.'],
-          ].map(([label, desc]) => `
           <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
-            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">${label}</div>
-            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">${desc}</div>
-          </div>`).join('')}
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Search</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Find a brand by name. Also matches on parent advertiser name.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Geography</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Filter by the brand's region — Europe, MENA, EMEA, US or APAC.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Sector</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Filter to a specific sector.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Publisher</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Show only brands spending on a specific competitor publisher.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Recency</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">All time = full 12-month dataset. Active 90d = brands that have published at least one article in the last 90 days.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Reuters relationship</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Clients = brands already working with Reuters. Prospects = brands not yet on Reuters. All = everything.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">View</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Hot Prospects = pre-set EMEA + active 90d + prospects only. All brands = full unfiltered dataset.</div>
+          </div>
         </div>
       </div>
 
@@ -398,18 +413,18 @@ td { padding: 12px 14px; vertical-align: top; }
       <div>
         <div style="font-family:var(--mono);font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--orange);border-bottom:1px solid var(--rule);padding-bottom:7px;margin-bottom:12px">Reading the table</div>
         <div style="display:flex;flex-direction:column;gap:9px">
-          ${[
-            ['✓ Reuters client', 'Orange badge on the brand name — this brand already works with Reuters. Use the Battlecard to build an upsell pitch.'],
-            ['Publisher chips', 'Orange chips = Tier 1 direct competitors (FT, Bloomberg, WSJ etc.). Muted chips = Tier 2 adjacent publishers (BBC, CNBC, Euronews). Colour signals how directly you\'re competing.'],
-            ['Last 90d badge', 'The coloured dot and number — how many articles the brand published in the last 90 days. Hot (orange) = 50+. Warm = 10–49. Cool = 1–9. Cold = none.'],
-            ['↑ Accelerating', 'Brand is publishing significantly more than its own trailing average right now. Strongest "spending now" signal.'],
-            ['↓ Gone quiet', 'Brand had meaningful activity but has published nothing in 60+ days. Prime re-engagement target.'],
-            ['Flagged label', 'Sector is not B2B core (e.g. Travel, Luxury, NGO). Can still be a valid prospect — judge case by case.'],
-          ].map(([label, desc]) => `
           <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
-            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">${label}</div>
-            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">${desc}</div>
-          </div>`).join('')}
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">✓ Reuters client</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">Orange badge on the brand name — this brand already works with Reuters. Use the Battlecard to build an upsell pitch.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Publisher chips</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">The top publishers this brand is spending with, ranked by article count.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 12px;background:white;border-left:2px solid var(--rule)">
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--orange);padding-top:1px">Last 90d badge</div>
+            <div style="font-family:var(--cond);font-size:11px;line-height:1.5;color:#1A0E08">The coloured dot and number — how many articles the brand published in the last 90 days. Hot (orange) = 50+. Warm = 10–49. Cool = 1–9. Cold = none.</div>
+          </div>
         </div>
       </div>
 
