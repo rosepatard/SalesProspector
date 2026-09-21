@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Prospects — Reuters</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #FAF6ED;
+  --panel: #FFFFFF;
+  --ink: #14151A;
+  --muted: #6B6D74;
+  --line: #14151A;
+  --yellow: #FFC93C;
+  --mint: #CFEFEA;
+  --mint-line: #14151A;
+  --coral: #FF4B33;
+  --coral-soft: #FFE4DD;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+
+  /* Backward-compatible aliases: the table chips, battlecard modal CSS, and expanded-row
+     styles still reference these older variable names — aliasing them here means none of
+     that markup needs to change, and everything stays visually consistent. */
+  --orange: var(--coral);
+  --green: var(--ink);
+  --parch: var(--bg);
+  --rule: rgba(20,21,26,0.16);
+  --rule-dk: rgba(255,255,255,0.10);
+  --bask: var(--serif);
+  --cond: var(--sans);
+}
+html { font-size: 15px; }
+body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+/* HEADER */
+.header {
+  padding: 18px 28px; display: flex; align-items: center; flex-wrap: wrap; gap: 16px;
+  border-bottom: 3px solid var(--ink);
+}
+.header-wordmark {
+  font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; color: white;
+  background: var(--ink); padding: 9px 14px; border-radius: 10px; display: inline-block;
+}
+.header-title { font-family: var(--serif); font-weight: 900; font-size: 26px; color: var(--ink); }
+.header-nav a, .pill-btn {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px;
+  background: white; cursor: pointer; transition: all 0.15s; display: inline-block;
+}
+.header-nav a:hover, .pill-btn:hover { background: var(--ink); color: white; }
+.header-meta { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.pill-btn.on { background: var(--ink); color: white; }
+
+.dl-banner {
+  background: var(--coral); color: white; padding: 10px 28px; display: none;
+  font-family: var(--mono); font-size: 11px; font-weight: 600; align-items: center; justify-content: space-between;
+}
+body.dirty .dl-banner { display: flex; }
+
+/* FILTER BAR (shared: top bar, no sidebar) */
+.filter-bar {
+  padding: 18px 28px; border-bottom: 3px solid var(--ink); background: var(--bg);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 18px 22px;
+}
+.filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-group-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-btn {
+  padding: 8px 15px; border-radius: 999px; border: 2px solid var(--ink);
+  background: white; font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all 0.15s;
+}
+.filter-btn:hover:not(.active) { background: #F1EAD9; }
+.filter-btn.active { background: var(--ink); color: white; }
+.filter-select {
+  padding: 8px 30px 8px 15px; border-radius: 999px; border: 2px solid var(--ink); background: white;
+  font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2314151A' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.search-wrap { position: relative; margin-left: auto; }
+.search-wrap input {
+  width: 230px; padding: 8px 16px 8px 34px; border-radius: 999px;
+  background: white; border: 2px solid var(--ink); color: var(--ink);
+  font-family: var(--sans); font-size: 13px; outline: none;
+}
+.search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--ink); font-size: 13px; }
+.reset-link {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px;
+}
+
+/* Brand Prospector's filter controls keep their original class names/IDs (so the existing
+   JS needs zero changes) but are re-styled here to match the shared pill language exactly. */
+.filter-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.geo-group, .rec-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.geo-btn, .rec-btn {
+  padding: 8px 15px; border-radius: 999px; border: 2px solid var(--ink);
+  background: white; font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.geo-btn:hover:not(.active), .rec-btn:hover:not(.active) { background: #F1EAD9; }
+.geo-btn.active, .rec-btn.active { background: var(--ink); color: white; }
+.stat-callout { display: flex; align-items: baseline; gap: 8px; }
+.stat-callout-n { font-family: var(--serif); font-weight: 900; font-size: 20px; color: var(--coral); }
+.stat-callout-l { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+
+/* TOOLBAR */
+.toolbar {
+  padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.results-label { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+.results-label strong { color: var(--ink); font-weight: 700; }
+.toolbar-actions { display: flex; gap: 10px; }
+.btn {
+  font-family: var(--sans); font-size: 13px; font-weight: 700;
+  padding: 10px 18px; border-radius: 999px; background: white; color: var(--ink); border: 2px solid var(--ink);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn:hover { background: var(--ink); color: white; }
+.btn.solid { background: var(--ink); color: white; }
+.btn.solid:hover { background: var(--coral); border-color: var(--ink); }
+
+/* SECTION HEADING (rep groups on Sales Prospects, could reuse elsewhere) */
+.section-heading { display: flex; align-items: center; gap: 12px; margin: 4px 0 4px; }
+.section-heading-badge {
+  font-family: var(--serif); font-weight: 900; font-size: 20px; color: var(--ink);
+  background: var(--yellow); padding: 4px 16px; border-radius: 10px; border: 2px solid var(--ink);
+}
+.section-heading-count { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+
+/* NUMBERED BADGE (shared: cards + table rows) */
+.n-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: white;
+  background: var(--ink); padding: 3px 9px; border-radius: 999px;
+}
+
+/* PILL TAGS (shared semantics: geo/country = mint, publisher = yellow, month/date = white outline) */
+.tag-mint { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink); background: var(--mint); border: 2px solid var(--ink); padding: 3px 10px; border-radius: 999px; }
+.tag-yellow { font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--ink); background: var(--yellow); border: 2px solid var(--ink); padding: 3px 11px; border-radius: 999px; white-space: nowrap; }
+.tag-outline { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.03em; color: var(--muted); background: white; border: 2px solid var(--ink); padding: 3px 10px; border-radius: 999px; }
+
+/* CARD (Sales Prospects) */
+.board { padding: 22px 28px 70px; display: grid; gap: 30px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.card {
+  background: var(--panel); border: 3px solid var(--ink); border-radius: 18px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 10px; position: relative;
+}
+.card-n {
+  position: absolute; top: -13px; left: 16px;
+}
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 5px; }
+.card-brand { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--ink); line-height: 1.2; }
+.card-about { font-family: var(--sans); font-size: 13px; color: var(--muted); line-height: 1.5; }
+.card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.card-note {
+  font-family: var(--sans); font-size: 12.5px; color: var(--ink); margin-top: 2px; line-height: 1.5;
+  white-space: pre-line; background: var(--coral-soft); border-left: 3px solid var(--coral); padding: 8px 11px; border-radius: 6px;
+}
+.card-divider { border: none; border-top: 2px dashed var(--ink); margin: 2px 0; opacity: 0.5; }
+.card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.card-link { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--coral); text-decoration: none; }
+.card-link:hover { text-decoration: underline; }
+.card-link.disabled { color: #B9B6AC; }
+.card-edit-row { display: none; gap: 6px; }
+.card-edit-row button {
+  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  background: white; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px;
+  cursor: pointer; color: var(--ink); transition: all 0.15s;
+}
+.card-edit-row button:hover { background: var(--ink); color: white; }
+body.editing .card-edit-row { display: flex; }
+.empty { padding: 90px 20px; text-align: center; font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 22px; color: var(--muted); }
+
+/* TABLE (Brand Prospector) */
+.table-outer { padding: 0 28px 40px; }
+.table-wrap { border: 3px solid var(--ink); border-radius: 18px; background: white; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: var(--yellow); border-bottom: 3px solid var(--ink); }
+th {
+  padding: 12px 16px; text-align: left; font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); cursor: pointer; user-select: none; white-space: nowrap;
+}
+th .arr { margin-left: 4px; opacity: 0.5; }
+th.sorted .arr { opacity: 1; }
+tbody { counter-reset: rowcounter; }
+tbody tr { border-bottom: 2px solid #EDE6D8; cursor: pointer; transition: background 0.1s; }
+tbody tr:not(.exp-row) { counter-increment: rowcounter; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #FBF7EE; }
+td { padding: 14px 16px; vertical-align: top; }
+tbody tr:not(.exp-row) td:first-child { position: relative; padding-left: 46px; }
+tbody tr:not(.exp-row) td:first-child::before {
+  content: counter(rowcounter, decimal-leading-zero);
+  position: absolute; left: 14px; top: 15px;
+  font-family: var(--mono); font-size: 9.5px; font-weight: 700; color: white;
+  background: var(--ink); border-radius: 999px; padding: 3px 8px;
+}
+.brand-name { font-family: var(--serif); font-weight: 900; font-size: 15px; color: var(--ink); }
+.brand-sub { font-family: var(--sans); font-size: 11px; color: var(--muted); margin-top: 3px; }
+.geo-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.geo-chip {
+  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); background: var(--mint); border: 1.5px solid var(--ink); padding: 2px 8px; border-radius: 999px;
+}
+.sector-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.pub-chips { display: flex; flex-wrap: wrap; gap: 5px; max-width: 220px; }
+.pub-chip {
+  font-family: var(--sans); font-size: 10.5px; font-weight: 600;
+  padding: 2px 9px; background: white; border: 1.5px solid var(--ink); color: var(--ink); white-space: nowrap; border-radius: 999px;
+}
+.count-cell { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--coral); text-align: right; }
+.date-cell { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.05em; padding: 3px 9px; border-radius: 999px; border: 1.5px solid var(--ink);
+}
+.badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.badge-hot  { background: var(--yellow); color: var(--ink); }
+.badge-warm { background: white; color: var(--muted); }
+.badge-cool { background: white; color: var(--muted); opacity: .7; }
+.badge-cold { background: white; color: rgba(20,21,26,0.4); }
+.reuters-badge {
+  display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px;
+  background: var(--ink); color: white; margin-top: 5px; border: 1.5px solid var(--ink);
+}
+.exp-row td { padding: 0; background: #14151A; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 20px 24px 30px; }
+.pg-btn {
+  padding: 6px 13px; border: 2px solid var(--ink); border-radius: 999px; background: white;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink); cursor: pointer; transition: all 0.15s;
+}
+.pg-btn:hover:not(:disabled) { background: var(--ink); color: white; }
+.pg-btn.active { background: var(--ink); color: white; }
+.pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pg-gap { font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 0 4px; }
+
+/* MODAL */
+.overlay {
+  display: none; position: fixed; inset: 0; background: rgba(20,21,26,0.55); z-index: 300;
+  align-items: center; justify-content: center;
+}
+.overlay.show { display: flex; }
+.modal { width: min(500px, 92vw); max-height: 88vh; overflow-y: auto; background: var(--panel); border: 3px solid var(--ink); border-radius: 20px; padding: 26px; }
+.modal h3 { font-family: var(--serif); font-weight: 900; font-size: 21px; margin-bottom: 18px; color: var(--ink); }
+.field { margin-bottom: 13px; }
+.field label { display: block; font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 9px 13px; border-radius: 10px; border: 2px solid var(--ink); background: var(--bg);
+  font-family: var(--sans); font-size: 13.5px; color: var(--ink); outline: none;
+}
+.field textarea { resize: vertical; min-height: 56px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+/* EXPANDED */
+.exp-row td {
+  padding: 0; background: #180C04;
+  border-bottom: 2px solid var(--orange);
+}
+.exp-inner {
+  padding: 22px 24px;
+  display: grid; grid-template-columns: 1fr 1.8fr 1fr; gap: 24px;
+}
+.exp-head {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,255,255,0.9);
+  padding-bottom: 8px; margin-bottom: 12px; letter-spacing: 0.15em;
+  border-bottom: 1px solid var(--rule-dk);
+}
+.bar-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.bar-name {
+  font-family: var(--cond); font-size: 11px; color: white;
+  width:118px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0;
+}
+.bar-track { flex:1; height:3px; background:rgba(255,255,255,0.15); }
+.bar-fill  { height:100%; background:var(--orange); }
+.bar-n    { font-family:var(--mono); font-size:10px; color:var(--orange); width:26px; text-align:right; flex-shrink:0; }
+.topic-tag {
+  display:inline-block; margin:2px 3px 2px 0;
+  font-family:var(--mono); font-size:8px; letter-spacing:0.07em;
+  padding:2px 7px; text-transform:uppercase;
+  border:1px solid rgba(255,255,255,0.3); color:rgba(255,255,255,0.85);
+}
+.art-list { display:flex; flex-direction:column; gap:5px; max-height:200px; overflow-y:auto; }
+.art-item {
+  padding:8px 10px; background:rgba(255,255,255,0.05);
+  border-left:2px solid rgba(255,255,255,0.2);
+  display:flex; align-items:flex-start; gap:8px;
+  transition:border-color 0.12s;
+}
+.art-item:hover { border-left-color:var(--orange); }
+.art-item a {
+  font-family:var(--bask); font-style:italic; font-size:11px;
+  color:rgba(255,255,255,0.9); text-decoration:none; line-height:1.4; flex:1;
+}
+.art-item a:hover { color:white; }
+.art-meta {
+  font-family:var(--mono); font-size:8px; color:rgba(255,255,255,0.6);
+  letter-spacing:0.05em; text-transform:uppercase; margin-top:3px;
+}
+.art-arr { font-size:9px; color:rgba(255,255,255,0.75); flex-shrink:0; margin-top:2px; }
+.sum-brand {
+  font-family:var(--bask); font-weight:700; font-size:15px; color:white;
+  line-height:1.2; margin-bottom:3px;
+}
+.sum-sub {
+  font-family:var(--mono); font-size:9px; letter-spacing:0.07em;
+  color:rgba(255,255,255,0.75); text-transform:uppercase; margin-bottom:12px;
+}
+.sum-geos { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:12px; }
+.sum-geo {
+  font-family:var(--mono); font-size:8px; letter-spacing:0.09em;
+  padding:2px 7px; background:rgba(214,64,0,0.14);
+  color:var(--orange); text-transform:uppercase;
+}
+.sum-stats { display:flex; gap:20px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--rule-dk); }
+.sum-stat-n {
+  font-family:var(--bask); font-weight:700; font-size:26px;
+  color:var(--orange); letter-spacing:-0.02em; line-height:1;
+}
+.sum-stat-l {
+  font-family:var(--bask); font-style:italic; font-size:9px;
+  color:rgba(255,255,255,0.8); margin-top:2px; line-height:1.3;
+}
+.sum-lede {
+  font-family:var(--bask); font-style:italic; font-size:11px;
+  color:rgba(255,255,255,0.9); line-height:1.65;
+}
+.sum-lede strong { font-style:normal; color:white; }
+.sum-campaigns {
+  margin-top:8px; font-family:var(--mono); font-size:8px; letter-spacing:0.05em;
+  color:rgba(255,255,255,0.85); text-transform:uppercase; line-height:1.6;
+}
+
+
+
+
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="header-wordmark">REUTERS™</span>
+  <span class="header-title">Sales Prospects</span>
+  <a class="header-nav-link" href="index.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">← Brand Prospector</a>
+  <div class="header-meta">
+    <button class="pill-btn" id="edit-toggle" onclick="toggleEdit()">Edit mode: off</button>
+  </div>
+</header>
+
+<div class="dl-banner" id="dl-banner">
+  <span>You've made changes that aren't saved to the live page yet.</span>
+  <strong>Download → commit → push in GitHub Desktop</strong>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-group-label">Rep</span>
+    <div class="btn-group" id="rep-filters"></div>
+  </div>
+  <div class="filter-group">
+    <span class="filter-group-label">Month</span>
+    <div class="btn-group" id="month-filters"></div>
+  </div>
+  <span class="reset-link" onclick="resetFilters()">Reset</span>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input id="search" type="text" placeholder="Brand or publisher…" oninput="render()">
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="results-label">Showing <strong id="results-count">0</strong> of <strong id="results-total">0</strong></div>
+  <div class="toolbar-actions">
+    <button class="btn" id="add-btn" style="display:none" onclick="openModal()">+ Add prospect</button>
+    <button class="btn solid" onclick="downloadUpdated()">Download updated page</button>
+  </div>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <h3 id="modal-title">Add prospect</h3>
+    <input type="hidden" id="f-id">
+    <div class="field"><label>Month</label><input id="f-month" list="month-options" placeholder="e.g. October"></div>
+    <datalist id="month-options"></datalist>
+    <div class="field"><label>Rep</label>
+      <select id="f-rep">
+        <option>Dana</option><option>Emma</option><option>Katurah</option><option>Mena</option><option>APAC</option>
+      </select>
+    </div>
+    <div class="field"><label>Brand</label><input id="f-brand" placeholder="e.g. Siemens"></div>
+    <div class="field"><label>Publisher</label><input id="f-publisher" placeholder="e.g. Financial Times"></div>
+    <div class="field"><label>Country</label><input id="f-country" placeholder="e.g. Germany"></div>
+    <div class="field"><label>About the company</label><input id="f-about" placeholder="One line on what they do"></div>
+    <div class="field"><label>Link to content</label><input id="f-url" placeholder="https://…"></div>
+    <div class="field"><label>Note</label><textarea id="f-note" placeholder="Context, contact name, deal size…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn solid" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROSPECTS = [{"id": 1, "month": "July", "rep": "Dana", "brand": "Deloitte", "publisher": "WSJ", "note": "", "url": "https://deloitte.wsj.com/cio/tollgating-the-pricing-paradox-of-agentic-saas-f12f3dd1", "country": "UK", "about": "Global professional services network — audit, tax, consulting and advisory"}, {"id": 2, "month": "July", "rep": "Emma", "brand": "Sedex", "publisher": "WSJ", "note": "Connected with Rachel Hutchinson", "url": "https://partners.wsj.com/sedex/the-supply-chain-visibility-paradox/", "country": "UK", "about": "Supply chain data and ethical sourcing platform"}, {"id": 3, "month": "July", "rep": "Katurah", "brand": "Wellcome Trust", "publisher": "Politico", "note": "", "url": "https://www.politico.eu/sponsored-content/regional-solidarity-and-solutions-in-the-americas/", "country": "UK", "about": "Charitable foundation funding health and biomedical research"}, {"id": 4, "month": "July", "rep": "Mena", "brand": "Dubai Department of Economy and Tourism", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/what-will-power-the-next-phase-of-ai-growth-", "country": "UAE", "about": "Government authority for Dubai's economic development and tourism"}, {"id": 5, "month": "July", "rep": "APAC", "brand": "Claude", "publisher": "WSJ", "note": "", "url": "https://partners.wsj.com/anthropic/problem-solvers/bringing-advanced-ai-into-everyday-workplace-tools/", "country": "US", "about": "Anthropic's AI assistant — this one's Anthropic's own sponsored content, not a prospect"}, {"id": 6, "month": "July", "rep": "Dana", "brand": "LSEG", "publisher": "FT", "note": "", "url": "https://www.ft.com/content/0352fb0f-66dd-4ff2-920b-861686f16576", "country": "UK", "about": "London Stock Exchange Group — financial markets infrastructure and data"}, {"id": 7, "month": "July", "rep": "Emma", "brand": "Kantar", "publisher": "Fortune", "note": "Connected with Sarah Wood", "url": "https://fortune.com/brandstudio/kantar/how-cmos-drive-brand-growth-in-the-ai-era/", "country": "UK", "about": "Market research and data/insights consultancy"}, {"id": 8, "month": "July", "rep": "Katurah", "brand": "EU Commission", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/my-europe/2026/07/06/the-alps-are-drying-out-eu-funded-project-assesses-the-future-of-europes-water-tower", "country": "Belgium", "about": "The European Union's executive institution"}, {"id": 9, "month": "July", "rep": "Mena", "brand": "Invest Qatar", "publisher": "WSJ", "note": "", "url": "https://partners.wsj.com/invest-qatar/eye-on-qatar/the-new-gravity-the-gravity-of-choice/", "country": "Qatar", "about": "Government agency promoting foreign investment into Qatar"}, {"id": 10, "month": "July", "rep": "Dana", "brand": "Axa", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/axa-xl/powering-ai-why-data-centers-are-a-board-level-risk", "country": "France", "about": "Global insurance and asset management group"}, {"id": 11, "month": "July", "rep": "Emma", "brand": "Arm", "publisher": "WSJ", "note": "In contact - we must have lost this opp", "url": "https://partners.wsj.com/arm/how-agentic-ai-is-rewiring-the-modern-data-center/", "country": "UK", "about": "Semiconductor and software design company — chip architecture powering most mobile devices"}, {"id": 12, "month": "July", "rep": "Katurah", "brand": "Export and Investment Promotion Agency of the Republic of Azerbaijan", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/2026/07/10/how-this-countrys-faiths-have-coexisted-for-centuries", "country": "Azerbaijan", "about": "Government agency promoting Azerbaijani exports and inward investment (AZPROMO)"}, {"id": 13, "month": "July", "rep": "Mena", "brand": "Invest Kuwait", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/immersive-story/kdipa/kuwaiti-investment-enters-a-digital-era-powered-by-bold-new-reforms", "country": "Kuwait", "about": "Government investment promotion body"}, {"id": 14, "month": "July", "rep": "Dana", "brand": "Lombard Odier", "publisher": "FT", "note": "", "url": "https://channels.ft.com/en/rethink/is-shock-the-new-reality/", "country": "Switzerland", "about": "Private bank and wealth management group"}, {"id": 15, "month": "July", "rep": "Emma", "brand": "T-Mobile", "publisher": "Politico", "note": "Struggling to find a lead here - will check Apollo tomorrow", "url": "https://www.politico.com/sponsor-content/2026/07/02/americas-next-great-infrastructure-project-is-connectivity", "country": "US", "about": "Telecommunications and wireless network provider"}, {"id": 16, "month": "July", "rep": "Katurah", "brand": "Agency of Information and Mass Communications under Presidential Administration of Uzbekistan", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/business/2026/07/14/from-greenhouses-to-family-businesses-entrepreneurship-reshapes-rural-livelihoods", "country": "Uzbekistan", "about": "Government body overseeing media and public communications"}, {"id": 17, "month": "July", "rep": "Mena", "brand": "Dubai Chamber of Commerce & Industry", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/business/2026/07/07/dubais-new-startup-campus-wants-to-be-the-front-door-for-founders", "country": "UAE", "about": "Business association promoting trade and investment in Dubai"}, {"id": 18, "month": "July", "rep": "Dana", "brand": "Kpler", "publisher": "Politico", "note": "", "url": "https://www.politico.com/sponsor-content/2026/07/13/when-freedom-of-navigation-collides-with-china-policy", "country": "Belgium", "about": "Market intelligence and data analytics for commodities and shipping"}, {"id": 19, "month": "July", "rep": "Emma", "brand": "Shell", "publisher": "FT", "note": "We know we lost this - see opp notes", "url": "https://www.ft.com/partnercontent/shell/the-endurance-engineers.html", "country": "Netherlands", "about": "Global energy company — oil, gas and renewables"}, {"id": 20, "month": "July", "rep": "Katurah", "brand": "UK Government", "publisher": "FT", "note": "", "url": "https://www.ft.com/content/87621a1b-394b-4137-ad03-95d9a59322f9", "country": "UK", "about": "National government"}, {"id": 21, "month": "July", "rep": "Mena", "brand": "Media City Qatar", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/2026/07/08/planting-the-seeds-of-change-qatars-food-security-strategy", "country": "Qatar", "about": "Free zone hub for media, broadcast and entertainment companies"}, {"id": 22, "month": "July", "rep": "Dana", "brand": "UBS", "publisher": "FT", "note": "", "url": "https://transact.ft.com/entering-the-quantum-realm/", "country": "Switzerland", "about": "Global investment bank and wealth manager"}, {"id": 23, "month": "July", "rep": "Emma", "brand": "EDP", "publisher": "FT", "note": "Chased an old contact - no dice", "url": "https://thenextfive.ft.com/power-shifts-data-centres-diplomatic-tensions-and-the-energy-in-between", "country": "Portugal", "about": "Energy utility company — electricity generation and distribution"}, {"id": 24, "month": "July", "rep": "Katurah", "brand": "Kyan Health", "publisher": "Fast Company", "note": "", "url": "https://www.fastcompany.com/91573556/corporate-america-spends-billions-on-mental-health-services-97-never-use-it", "country": "Switzerland", "about": "AI-enabled employee mental health and wellbeing platform"}, {"id": 25, "month": "July", "rep": "Mena", "brand": "Abu Dhabi Health Data Services", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/abu-dhabi-health-data-services/abu-dhabi-s-vision-building-the-silicon-valley-of-ai-and-healthcare-in-the-middle-east", "country": "UAE", "about": "Digital healthcare data company (part of M42) operating Abu Dhabi's health information exchange, Malaffi"}, {"id": 26, "month": "July", "rep": "Dana", "brand": "UBS", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/ubs/ubs-asian-investment-conference-2026-investing-in-an-age-of-change", "country": "Switzerland", "about": "Global investment bank and wealth manager"}, {"id": 27, "month": "July", "rep": "Emma", "brand": "Parloa", "publisher": "Forbes", "note": "", "url": "https://www.forbes.com/sites/parloa/2026/07/15/a-stalled-ai-pilot-isnt-a-technology-failure-its-an-alignment-failure/", "country": "Germany", "about": "AI voice agent platform for customer service"}, {"id": 28, "month": "July", "rep": "Mena", "brand": "Thrive in Abu Dhabi", "publisher": "CNN", "note": "", "url": "https://sponsorcontent.cnn.com/edition/2026/thrive-in-abu-dhabi/ai-future/", "country": "UAE", "about": "Government-backed investment promotion campaign for Abu Dhabi"}, {"id": 29, "month": "July", "rep": "Dana", "brand": "UBS", "publisher": "WSJ", "note": "", "url": "https://partners.wsj.com/ubs/crafting-capital-season-2/global-capital-in-motion/", "country": "Switzerland", "about": "Global investment bank and wealth manager"}, {"id": 30, "month": "July", "rep": "Mena", "brand": "Kuwait Direct Investment Promotion Authority", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/immersive-story/kdipa/kuwaiti-investment-enters-a-digital-era-powered-by-bold-new-reforms", "country": "Kuwait", "about": "Government body promoting direct investment into Kuwait (KDIPA)"}, {"id": 31, "month": "July", "rep": "Dana", "brand": "Prudential", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/video/prudential/the-great-client-transfer", "country": "UK", "about": "Financial services group — insurance and asset management"}, {"id": 32, "month": "July", "rep": "Mena", "brand": "PureHealth", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/pure-health-the-30-trillion-problem-healthcare-keeps-ignoring", "country": "UAE", "about": "Healthcare provider group — hospitals, clinics and diagnostics"}, {"id": 33, "month": "July", "rep": "Dana", "brand": "PwC", "publisher": "Fast Company", "note": "", "url": "https://www.fastcompany.com/91567237/the-infinite-tool-with-very-real-limits", "country": "UK", "about": "Global professional services network — audit, tax and advisory"}, {"id": 34, "month": "July", "rep": "Mena", "brand": "RUA AlHaram", "publisher": "The Economist", "note": "", "url": "https://insights.economistenterprise.com/projects/foreign-ownership-holy-cities", "country": "Saudi Arabia", "about": "PIF-owned master developer building King Salman Gate around Al-Masjid Al-Haram in Makkah"}, {"id": 35, "month": "August", "rep": "Dana", "brand": "UBS", "publisher": "WSJ", "note": "", "url": "https://partners.wsj.com/ubs/the-red-thread/closing-the-gap-between-perception-and-reality/", "country": "Switzerland", "about": "Global investment bank and wealth manager"}, {"id": 36, "month": "August", "rep": "Emma", "brand": "Schneider Electric", "publisher": "Fortune", "note": "Live proposal on the table - 25-50k", "url": "https://fortune.com/brandstudio/schneider-electric/innovation-for-a-new-energy-world/", "country": "France", "about": "Energy management and industrial automation company"}, {"id": 37, "month": "August", "rep": "Katurah", "brand": "GSK", "publisher": "BBC", "note": "", "url": "https://www.bbc.com/storyworks/innovation-unlocked/gsk-amr", "country": "UK", "about": "Global pharmaceutical and biotech company"}, {"id": 38, "month": "August", "rep": "Mena", "brand": "Thrive in Abu Dhabi", "publisher": "CNN", "note": "", "url": "https://sponsorcontent.cnn.com/edition/2025/thrive-in-abu-dhabi/stronger-together/", "country": "UAE", "about": "Government-backed investment promotion campaign for Abu Dhabi"}, {"id": 39, "month": "August", "rep": "Dana", "brand": "Equals", "publisher": "CNN", "note": "", "url": "https://edition.cnn.com/sponsor/equals/global-business-payments-solved", "country": "UK", "about": "Digital payments and money transfer company"}, {"id": 40, "month": "August", "rep": "Emma", "brand": "Infobip", "publisher": "Fortune", "note": "Connected with Regina", "url": "https://fortune.com/brandstudio/infobip/building-an-ai-first-culture-of-innovation/", "country": "UK", "about": "Business communications platform — messaging, voice and customer engagement"}, {"id": 41, "month": "August", "rep": "Katurah", "brand": "Laureus", "publisher": "BBC", "note": "", "url": "https://www.bbc.com/storyworks/game-on-ii/tricon-genuine-cup-psg-part-of-the-team", "country": "UK", "about": "Global sports charity foundation using sport for social change"}, {"id": 42, "month": "August", "rep": "Mena", "brand": "Dubai Department of Economy and Tourism", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/could-the-apac-gcc-investment-corridor-reshape-global-growth-", "country": "UAE", "about": "Government authority for Dubai's economic development and tourism"}, {"id": 43, "month": "August", "rep": "Dana", "brand": "Deloitte", "publisher": "WSJ", "note": "", "url": "https://deloitte.wsj.com/cfo/when-quantum-meets-orbit-why-its-not-too-early-to-start-planning-7e98a32f", "country": "UK", "about": "Global professional services network — audit, tax, consulting and advisory"}, {"id": 44, "month": "August", "rep": "Emma", "brand": "Merck", "publisher": "The Economist", "note": "", "url": "https://insights.economistenterprise.com/trade-geopolitics/fragmented-futures/when-geopolitics-short-circuits-silicon", "country": "Germany", "about": "Merck KGaA — science and technology company spanning electronics, healthcare and life sciences"}, {"id": 45, "month": "August", "rep": "Katurah", "brand": "Union for International Cancer Control", "publisher": "BBC", "note": "", "url": "https://www.bbc.com/storyworks/rewriting-cancer/astrazeneca-helping-people-navigate-lung-cancer-in-kenya", "country": "Switzerland", "about": "Global NGO uniting the cancer community (UICC)"}, {"id": 46, "month": "August", "rep": "Dana", "brand": "Lombard Odier", "publisher": "FT", "note": "", "url": "https://channels.ft.com/en/rethink/how-to-cure-an-ailing-antibiotics-business/", "country": "Switzerland", "about": "Private bank and wealth management group"}, {"id": 47, "month": "August", "rep": "Emma", "brand": "Siemens Smart Infrastructure", "publisher": "Forbes", "note": "", "url": "https://www.forbes.com/sites/siemens-smart-infrastructure/2026/08/05/healing-by-design-how-human-centric-architecture-and-autonomous-tech-are-revolutionizing-patient-recovery/", "country": "Germany", "about": "Siemens division for building, grid and infrastructure technology"}, {"id": 48, "month": "August", "rep": "Katurah", "brand": "Turkey Tourism", "publisher": "CNN", "note": "", "url": "https://sponsorcontent.cnn.com/edition/2026/goturkiye-com/beneath-the-surface/index.html", "country": "Turkey", "about": "National tourism promotion body"}, {"id": 49, "month": "August", "rep": "Emma", "brand": "MTN", "publisher": "CNN", "note": "", "url": "https://sponsorcontent.cnn.com/edition/2026/mtn/connectivity/index.html", "country": "South Africa", "about": "Pan-African telecommunications provider"}, {"id": 50, "month": "August", "rep": "Katurah", "brand": "Turkey Tourism", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/travel/2026/07/28/marmaris-sailing-gulets-ancient-ruins-and-turkiyes-pine-honey-capital", "country": "Turkey", "about": "National tourism promotion body"}, {"id": 51, "month": "August", "rep": "Emma", "brand": "T-Mobile for Business", "publisher": "CNN", "note": "", "url": "https://sponsorcontent.cnn.com/interactive/tmobile-supermobile/", "country": "US", "about": "T-Mobile's enterprise/business connectivity division"}, {"id": 52, "month": "August", "rep": "Katurah", "brand": "AirHelp", "publisher": "Politico", "note": "", "url": "https://www.politico.eu/sponsored-content/the-hidden-cost-of-global-flight-disruptions/", "country": "Germany", "about": "Air passenger rights service helping travellers claim flight delay/cancellation compensation"}, {"id": 53, "month": "August", "rep": "Emma", "brand": "SAP", "publisher": "Forbes", "note": "", "url": "https://www.forbes.com/sites/sap/2026/08/05/humanity-at-the-heart-of-work-how-ai-can-unleash-the-power-of-people/", "country": "Germany", "about": "Enterprise software and cloud platform provider"}, {"id": 54, "month": "August", "rep": "Katurah", "brand": "Ministry of Culture of the Republic of Azerbaijan", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/culture/2026/08/11/gabala-music-festival-more-than-just-music-and-art", "country": "Azerbaijan", "about": "National government ministry"}, {"id": 55, "month": "August", "rep": "Emma", "brand": "Total Energies", "publisher": "CNBC", "note": "", "url": "https://www.cnbc.com/advertorial/the-growing-energy-crisis-behind-ai/", "country": "France", "about": "Multi-energy company — oil, gas and renewables"}, {"id": 56, "month": "August", "rep": "Emma", "brand": "EDP", "publisher": "FT", "note": "", "url": "https://www.ft.com/partnercontent/edp/ai-and-electrification-building-the-next-generation-of-energy-systems.html", "country": "Portugal", "about": "Energy utility company — electricity generation and distribution"}, {"id": 57, "month": "September", "rep": "Dana", "brand": "Standard Chartered Bank", "publisher": "Financial Times", "note": "Couldn't get the article…", "url": "", "country": "UK", "about": "International bank focused on Asia, Africa and the Middle East"}, {"id": 58, "month": "September", "rep": "Emma", "brand": "Good Energy", "publisher": "Guardian", "note": "‘Our operations are powered by solar’: meet the companies tackling energy hikes with technology", "url": "https://www.theguardian.com/the-good-energy-guide/2026/aug/07/how-businesses-are-cutting-energy-costs-with-solar-power", "country": "UK", "about": "Renewable energy supplier"}, {"id": 59, "month": "September", "rep": "Katurah", "brand": "Scottish Government", "publisher": "Daily Record", "note": "New government initiative launched to help first-time buyers across Scotland", "url": "https://www.dailyrecord.co.uk/special-features/new-government-initiative-launched-help-37510750", "country": "UK", "about": "Devolved government of Scotland"}, {"id": 60, "month": "September", "rep": "Mena", "brand": "PIF", "publisher": "Bloomberg", "note": "PIF’s Next Five Years: Turning Scale Into Lasting Value", "url": "https://sponsored.bloomberg.com/article/pif/pif-s-next-five-years-turning-scale-into-lasting-value", "country": "Saudi Arabia", "about": "Public Investment Fund — Saudi Arabia's sovereign wealth fund"}, {"id": 61, "month": "September", "rep": "Dana", "brand": "Lloyds Bank", "publisher": "", "note": "Return on relationships: why the future of banking is more human than ever", "url": "https://www.independent.co.uk/news/business/banking-future-people-sme-ai-b3020769.html", "country": "UK", "about": "Consumer and retail banking group"}, {"id": 62, "month": "September", "rep": "Emma", "brand": "Siemens Smart Infrastructure", "publisher": "Forbes", "note": "Electrification In Life Sciences: More Than A Power Upgrade\n\nThey have around 4-5 articles with Forbes", "url": "https://www.forbes.com/sites/siemens-smart-infrastructure/2026/08/12/electrification-in-life-sciences-more-than-a-power-upgrade/", "country": "Germany", "about": "Siemens division for building, grid and infrastructure technology"}, {"id": 63, "month": "September", "rep": "Katurah", "brand": "GSK", "publisher": "WSJ", "note": "", "url": "https://partners.wsj.com/gsk-oncology/health/collaboration-as-a-catalyst-in-cancer-research/", "country": "UK", "about": "Global pharmaceutical and biotech company"}, {"id": 64, "month": "September", "rep": "Mena", "brand": "Dubai Chamber of Commerce & Industry", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/business/2026/08/27/how-dubai-became-the-worlds-easiest-place-to-set-up-and-scale-a-business", "country": "UAE", "about": "Business association promoting trade and investment in Dubai"}, {"id": 65, "month": "September", "rep": "Dana", "brand": "BitGo", "publisher": "Fortune", "note": "", "url": "https://fortune.com/brandstudio/bitgo/building-the-backbone-of-digital-finance/", "country": "UK", "about": "Digital asset custody and infrastructure provider for cryptocurrency"}, {"id": 66, "month": "September", "rep": "Emma", "brand": "Shell", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/shell/the-new-energy-economy-the-us-airport-that-put-sustainable-aviation-fuel-to-the-test", "country": "Netherlands", "about": "Global energy company — oil, gas and renewables"}, {"id": 67, "month": "September", "rep": "Katurah", "brand": "GSK", "publisher": "NYT", "note": "", "url": "https://www.nytimes.com/paidpost/gsk-jemperli/taking-action/taking-action.html", "country": "UK", "about": "Global pharmaceutical and biotech company"}, {"id": 68, "month": "September", "rep": "Mena", "brand": "Media City Qatar", "publisher": "Euronews", "note": "", "url": "https://www.euronews.com/2026/09/09/beating-the-heat-tackling-the-summer-months-in-qatar", "country": "Qatar", "about": "Free zone hub for media, broadcast and entertainment companies"}, {"id": 69, "month": "September", "rep": "Dana", "brand": "Deloitte", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/deloitte/turning-growth-into-advantage-how-ceos-can-win-in-an-uneven-financial-market-across-asia-pacific", "country": "UK", "about": "Global professional services network — audit, tax, consulting and advisory"}, {"id": 70, "month": "September", "rep": "Emma", "brand": "EDP", "publisher": "FT", "note": "", "url": "https://www.ft.com/partnercontent/edp/partners-in-transition.html", "country": "Portugal", "about": "Energy utility company — electricity generation and distribution"}, {"id": 71, "month": "September", "rep": "Katurah", "brand": "EFPIA", "publisher": "Politico", "note": "EFPIA = European Federation of Pharmaceutical Industries and Associations", "url": "https://www.politico.eu/sponsored-content/europe-cannot-afford-to-lose-the-race-for-biomedical-innovation/", "country": "Belgium", "about": "European Federation of Pharmaceutical Industries and Associations — pharma trade body"}, {"id": 72, "month": "September", "rep": "Mena", "brand": "Qatar National Bank", "publisher": "The Economist", "note": "First time publishing content in at least a year", "url": "https://insights.economistenterprise.com/trade-geopolitics/global-trade-is-not-retreating", "country": "Qatar", "about": "Largest bank in the Middle East and Africa by assets"}, {"id": 73, "month": "September", "rep": "Dana", "brand": "PwC", "publisher": "WSJ", "note": "", "url": "https://partners.wsj.com/pwc/rethinking-reinvention/what-leaders-need-to-know-about-ai-and-growth/", "country": "UK", "about": "Global professional services network — audit, tax and advisory"}, {"id": 74, "month": "September", "rep": "Emma", "brand": "Metlen", "publisher": "Bloomberg", "note": "", "url": "https://sponsored.bloomberg.com/article/metlen/turning-europe-s-industrial-ambitions-into-reality", "country": "Greece", "about": "Metlen Energy & Metals — industrial group spanning energy and metallurgy"}, {"id": 75, "month": "September", "rep": "Dana", "brand": "PwC", "publisher": "NYT", "note": "", "url": "https://www.nytimes.com/paidpost/pwc/who-governs-the-agents.html", "country": "UK", "about": "Global professional services network — audit, tax and advisory"}, {"id": 76, "month": "September", "rep": "Emma", "brand": "Contentful", "publisher": "The Atlantic", "note": "", "url": "https://www.theatlantic.com/sponsored/contentful-2026/the-ai-questions-leaders-need-to-answer/4132/", "country": "Germany", "about": "Cloud-based content management platform for digital teams"}, {"id": 77, "month": "September", "rep": "Dana", "brand": "PwC", "publisher": "FT", "note": "", "url": "https://www.ft.com/content/ca69d776-63f7-4fa9-bd32-5c39ae6deaef", "country": "UK", "about": "Global professional services network — audit, tax and advisory"}, {"id": 78, "month": "September", "rep": "Emma", "brand": "Connect Europe", "publisher": "Politico", "note": "the voice of the leading providers of connectivity networks and services in Europe", "url": "https://www.politico.eu/sponsored-content/draghi-report-or-hugging-face-who-will-win-the-tech-race/", "country": "Belgium", "about": "Trade association for Europe's leading telecoms connectivity providers"}, {"id": 79, "month": "September", "rep": "Dana", "brand": "HSBC", "publisher": "Bloomberg", "note": "First time publishing content since December '25", "url": "https://sponsored.bloomberg.com/quicksight/hsbc/the-trust-threshold-where-ai-stops-and-financial-advice-begins", "country": "UK", "about": "Global consumer and retail banking group"}, {"id": 80, "month": "September", "rep": "Emma", "brand": "Aon", "publisher": "Fortune", "note": "They seem to work exclusively with Fortune or have, at least for a year", "url": "https://fortune.com/brandstudio/aon/the-business-of-better-decisions/", "country": "UK", "about": "Global professional services firm — risk, retirement and health consulting"}, {"id": 81, "month": "September", "rep": "Dana", "brand": "UBS", "publisher": "WSJ", "note": "Part of a long standing collab", "url": "https://partners.wsj.com/ubs/the-red-thread/how-risk-modeling-changed-for-good/", "country": "Switzerland", "about": "Global investment bank and wealth manager"}, {"id": 82, "month": "September", "rep": "Emma", "brand": "Celonis", "publisher": "The Economist", "note": "Enterprise AI Company", "url": "", "country": "Germany", "about": "Enterprise AI and process mining software company"}, {"id": 83, "month": "September", "rep": "Dana", "brand": "Innovate Finance", "publisher": "BBC", "note": "The Voice of UK FinTech, mission is to accelerate the UK’s leading role in the financial services sector by directly supporting the next generation of technology-led innovators to create a more inclusive, more democratic and more effective financial services sector that works better for everyone.", "url": "", "country": "UK", "about": "Trade association representing the UK fintech industry"}, {"id": 84, "month": "September", "rep": "Dana", "brand": "LGT Private Banking", "publisher": "FT", "note": "Series of 3x Articles; LGT is a private banking and asset management group that is fully controlled by the Liechtenstein Princely Family", "url": "https://www.ft.com/content/d58918d5-1e0b-4d84-ba6b-f4fb821a31a7", "country": "Liechtenstein", "about": "Private bank and asset manager owned by the Liechtenstein princely family"}, {"id": 85, "month": "September", "rep": "Dana", "brand": "Deutsche Bank", "publisher": "FT", "note": "First time publishing content in at least a year", "url": "https://www.ft.com/content/37c95e88-62f1-4687-802f-c77ec20ca204", "country": "Germany", "about": "Global investment bank and financial services company"}, {"id": 86, "month": "September", "rep": "Dana", "brand": "Chambers", "publisher": "Bloomberg", "note": "The World's Leading Lawyers & Law Firm Rankings'", "url": "https://sponsored.bloomberg.com/article/chambers/the-best-vs-the-rest-why-elite-us-law-firms-are-getting-harder-to-catch", "country": "UK", "about": "Chambers and Partners — global legal directory ranking law firms and lawyers"}];
+
+let filters = { rep: null, month: null };
+let editing = false;
+
+function monthOrder(m) {
+  const order = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const i = order.indexOf(m);
+  return i === -1 ? 999 : i;
+}
+function uniqueSorted(arr) { return [...new Set(arr)]; }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toggleEdit() {
+  editing = !editing;
+  document.body.classList.toggle('editing', editing);
+  document.getElementById('edit-toggle').classList.toggle('on', editing);
+  document.getElementById('edit-toggle').textContent = 'Edit mode: ' + (editing ? 'on' : 'off');
+  document.getElementById('add-btn').style.display = editing ? 'inline-block' : 'none';
+}
+
+function resetFilters() {
+  filters = { rep: null, month: null };
+  document.getElementById('search').value = '';
+  render();
+}
+
+function buildFilterButtons(containerId, values, key) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  values.forEach(v => {
+    const b = document.createElement('button');
+    b.className = 'filter-btn' + (filters[key] === v ? ' active' : '');
+    b.textContent = v;
+    b.onclick = () => { filters[key] = filters[key] === v ? null : v; render(); };
+    el.appendChild(b);
+  });
+}
+
+function render() {
+  const reps = uniqueSorted(PROSPECTS.map(p => p.rep));
+  const months = uniqueSorted(PROSPECTS.map(p => p.month)).sort((a, b) => monthOrder(a) - monthOrder(b));
+
+  buildFilterButtons('rep-filters', reps, 'rep');
+  buildFilterButtons('month-filters', months, 'month');
+
+  const dl = document.getElementById('month-options');
+  dl.innerHTML = uniqueSorted(PROSPECTS.map(p => p.month)).map(m => `<option value="${m}">`).join('');
+
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let items = PROSPECTS.filter(p =>
+    (!filters.rep || p.rep === filters.rep) &&
+    (!filters.month || p.month === filters.month) &&
+    (!q || p.brand.toLowerCase().includes(q) || (p.publisher || '').toLowerCase().includes(q))
+  );
+
+  document.getElementById('results-count').textContent = items.length;
+  document.getElementById('results-total').textContent = PROSPECTS.length;
+
+  items.sort((a, b) => a.rep.localeCompare(b.rep) || monthOrder(b.month) - monthOrder(a.month) || a.brand.localeCompare(b.brand));
+
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  if (items.length === 0) {
+    board.innerHTML = '<div class="empty">Nothing here. Try another filter?</div>';
+    return;
+  }
+
+  const byRep = new Map();
+  for (const p of items) {
+    if (!byRep.has(p.rep)) byRep.set(p.rep, []);
+    byRep.get(p.rep).push(p);
+  }
+
+  let n = 1;
+  for (const [rep, repItems] of byRep) {
+    const section = document.createElement('div');
+    section.style.display = 'grid'; section.style.gap = '14px';
+
+    const heading = document.createElement('div');
+    heading.className = 'section-heading';
+    heading.innerHTML = `<span class="section-heading-badge">${escapeHtml(rep)}</span><span class="section-heading-count">${repItems.length} lead${repItems.length === 1 ? '' : 's'}</span>`;
+    section.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'card-grid';
+    for (const p of repItems) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const linkHtml = p.url
+        ? `<a class="card-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">View content →</a>`
+        : `<span class="card-link disabled">No link on file</span>`;
+      card.innerHTML = `
+        <span class="n-badge card-n">#${String(n).padStart(3, '0')}</span>
+        <div class="card-top">
+          <div class="card-brand">${escapeHtml(p.brand)}</div>
+          ${p.country ? `<span class="tag-mint">${escapeHtml(p.country)}</span>` : ''}
+        </div>
+        ${p.about ? `<div class="card-about">${escapeHtml(p.about)}</div>` : ''}
+        <div class="card-meta">
+          ${p.publisher ? `<span class="tag-yellow">${escapeHtml(p.publisher)}</span>` : ''}
+          <span class="tag-outline">${escapeHtml(p.month)}</span>
+        </div>
+        <hr class="card-divider">
+        ${p.note ? `<div class="card-note">${escapeHtml(p.note)}</div>` : ''}
+        <div class="card-footer">
+          ${linkHtml}
+          <div class="card-edit-row">
+            <button onclick="openModal(${p.id})">Edit</button>
+            <button onclick="deleteEntry(${p.id})">Delete</button>
+          </div>
+        </div>
+      `;
+      n++;
+      grid.appendChild(card);
+    }
+    section.appendChild(grid);
+    board.appendChild(section);
+  }
+}
+
+function openModal(id) {
+  const modal = document.getElementById('modal-overlay');
+  const entry = id ? PROSPECTS.find(p => p.id === id) : null;
+  document.getElementById('modal-title').textContent = entry ? 'Edit prospect' : 'Add prospect';
+  document.getElementById('f-id').value = entry ? entry.id : '';
+  document.getElementById('f-month').value = entry ? entry.month : (uniqueSorted(PROSPECTS.map(p => p.month)).sort((a,b)=>monthOrder(b)-monthOrder(a))[0] || '');
+  document.getElementById('f-rep').value = entry ? entry.rep : 'Dana';
+  document.getElementById('f-brand').value = entry ? entry.brand : '';
+  document.getElementById('f-publisher').value = entry ? entry.publisher : '';
+  document.getElementById('f-country').value = entry ? (entry.country || '') : '';
+  document.getElementById('f-about').value = entry ? (entry.about || '') : '';
+  document.getElementById('f-url').value = entry ? (entry.url || '') : '';
+  document.getElementById('f-note').value = entry ? entry.note : '';
+  modal.classList.add('show');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+function saveEntry() {
+  const idVal = document.getElementById('f-id').value;
+  const month = document.getElementById('f-month').value.trim();
+  const brand = document.getElementById('f-brand').value.trim();
+  if (!month || !brand) { alert('Month and Brand are required.'); return; }
+  const entry = {
+    id: idVal ? Number(idVal) : Math.max(0, ...PROSPECTS.map(p => p.id)) + 1,
+    month,
+    rep: document.getElementById('f-rep').value,
+    brand,
+    publisher: document.getElementById('f-publisher').value.trim(),
+    country: document.getElementById('f-country').value.trim(),
+    about: document.getElementById('f-about').value.trim(),
+    url: document.getElementById('f-url').value.trim(),
+    note: document.getElementById('f-note').value.trim(),
+  };
+  const idx = PROSPECTS.findIndex(p => p.id === entry.id);
+  if (idx >= 0) PROSPECTS[idx] = entry; else PROSPECTS.push(entry);
+  markDirty();
+  closeModal();
+  render();
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this prospect?')) return;
+  const idx = PROSPECTS.findIndex(p => p.id === id);
+  if (idx >= 0) PROSPECTS.splice(idx, 1);
+  markDirty();
+  render();
+}
+
+function markDirty() { document.body.classList.add('dirty'); }
+
+function findJsonEnd(text, start) {
+  let inString = false, escape = false, depth = 0;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === '\\\\') escape = true;
+      else if (ch === '"') inString = false;
+    } else {
+      if (ch === '"') inString = true;
+      else if (ch === '{' || ch === '[') depth++;
+      else if (ch === '}' || ch === ']') { depth--; if (depth === 0) return i + 1; }
+    }
+  }
+  throw new Error('Could not find end of PROSPECTS block');
+}
+
+const ORIGINAL_HTML = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+
+function downloadUpdated() {
+  const marker = 'const PROSPECTS = ';
+  const start = ORIGINAL_HTML.indexOf(marker) + marker.length;
+  const end = findJsonEnd(ORIGINAL_HTML, start);
+  const newHtml = ORIGINAL_HTML.slice(0, start) + JSON.stringify(PROSPECTS) + ORIGINAL_HTML.slice(end);
+  const blob = new Blob([newHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'prospects.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  document.body.classList.remove('dirty');
+}
+
+render();
+</script>
+</body>
+</html>
