@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Insights — Reuters</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #FAF6ED;
+  --panel: #FFFFFF;
+  --ink: #14151A;
+  --muted: #6B6D74;
+  --line: #14151A;
+  --yellow: #FFC93C;
+  --mint: #CFEFEA;
+  --mint-line: #14151A;
+  --coral: #FF4B33;
+  --coral-soft: #FFE4DD;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+
+  /* Backward-compatible aliases: the table chips and expanded-row styles still reference
+     these older variable names — aliasing them here means none of that markup needs to
+     change, and everything stays visually consistent. */
+  --orange: var(--coral);
+  --green: var(--ink);
+  --parch: var(--bg);
+  --rule: rgba(20,21,26,0.16);
+  --rule-dk: rgba(255,255,255,0.10);
+  --bask: var(--serif);
+  --cond: var(--sans);
+}
+html { font-size: 15px; }
+body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+/* HEADER */
+.header {
+  padding: 18px 28px; display: flex; align-items: center; flex-wrap: wrap; gap: 16px;
+  border-bottom: 3px solid var(--ink);
+}
+.header-wordmark {
+  font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; color: white;
+  background: var(--ink); padding: 9px 14px; border-radius: 10px; display: inline-block;
+}
+.header-title { font-family: var(--serif); font-weight: 900; font-size: 26px; color: var(--ink); }
+.header-nav a, .pill-btn {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px;
+  background: white; cursor: pointer; transition: all 0.15s; display: inline-block;
+}
+.header-nav a:hover, .pill-btn:hover { background: var(--ink); color: white; }
+.header-meta { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.pill-btn.on { background: var(--ink); color: white; }
+
+.dl-banner {
+  background: var(--coral); color: white; padding: 10px 28px; display: none;
+  font-family: var(--mono); font-size: 11px; font-weight: 600; align-items: center; justify-content: space-between;
+}
+body.dirty .dl-banner { display: flex; }
+
+/* FILTER BAR (shared: top bar, no sidebar) */
+.filter-bar {
+  padding: 18px 28px; border-bottom: 3px solid var(--ink); background: var(--bg);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 18px 22px;
+}
+.filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-group-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-btn {
+  padding: 8px 15px; border-radius: 999px; border: 2px solid var(--ink);
+  background: white; font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all 0.15s;
+}
+.filter-btn:hover:not(.active) { background: #F1EAD9; }
+.filter-btn.active { background: var(--ink); color: white; }
+.filter-select {
+  padding: 8px 30px 8px 15px; border-radius: 999px; border: 2px solid var(--ink); background: white;
+  font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2314151A' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.search-wrap { position: relative; margin-left: auto; }
+.search-wrap input {
+  width: 230px; padding: 8px 16px 8px 34px; border-radius: 999px;
+  background: white; border: 2px solid var(--ink); color: var(--ink);
+  font-family: var(--sans); font-size: 13px; outline: none;
+}
+.search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--ink); font-size: 13px; }
+.reset-link {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px;
+}
+
+/* Brand Prospector's filter controls keep their original class names/IDs (so the existing
+   JS needs zero changes) but are re-styled here to match the shared pill language exactly. */
+.filter-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.geo-group, .rec-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.geo-btn, .rec-btn {
+  padding: 8px 15px; border-radius: 999px; border: 2px solid var(--ink);
+  background: white; font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.geo-btn:hover:not(.active), .rec-btn:hover:not(.active) { background: #F1EAD9; }
+.geo-btn.active, .rec-btn.active { background: var(--ink); color: white; }
+.stat-callout { display: flex; align-items: baseline; gap: 8px; }
+.stat-callout-n { font-family: var(--serif); font-weight: 900; font-size: 20px; color: var(--coral); }
+.stat-callout-l { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+
+/* TOOLBAR */
+.toolbar {
+  padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.results-label { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+.results-label strong { color: var(--ink); font-weight: 700; }
+.toolbar-actions { display: flex; gap: 10px; }
+.btn {
+  font-family: var(--sans); font-size: 13px; font-weight: 700;
+  padding: 10px 18px; border-radius: 999px; background: white; color: var(--ink); border: 2px solid var(--ink);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn:hover { background: var(--ink); color: white; }
+.btn.solid { background: var(--ink); color: white; }
+.btn.solid:hover { background: var(--coral); border-color: var(--ink); }
+
+/* SECTION HEADING (rep groups on Sales Prospects, could reuse elsewhere) */
+.section-heading { display: flex; align-items: center; gap: 12px; margin: 4px 0 4px; }
+.section-heading-badge {
+  font-family: var(--serif); font-weight: 900; font-size: 20px; color: var(--ink);
+  background: var(--yellow); padding: 4px 16px; border-radius: 10px; border: 2px solid var(--ink);
+}
+.section-heading-count { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+
+/* NUMBERED BADGE (shared: cards + table rows) */
+.n-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: white;
+  background: var(--ink); padding: 3px 9px; border-radius: 999px;
+}
+
+/* PILL TAGS (shared semantics: geo/country = mint, publisher = yellow, month/date = white outline) */
+.tag-mint { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink); background: var(--mint); border: 2px solid var(--ink); padding: 3px 10px; border-radius: 999px; }
+.tag-yellow { font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--ink); background: var(--yellow); border: 2px solid var(--ink); padding: 3px 11px; border-radius: 999px; white-space: nowrap; }
+.tag-outline { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.03em; color: var(--muted); background: white; border: 2px solid var(--ink); padding: 3px 10px; border-radius: 999px; }
+
+/* CARD (Sales Prospects) */
+.board { padding: 22px 28px 70px; display: grid; gap: 30px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.card {
+  background: var(--panel); border: 3px solid var(--ink); border-radius: 18px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 10px; position: relative;
+}
+.card-n {
+  position: absolute; top: -13px; left: 16px;
+}
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 5px; }
+.card-brand { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--ink); line-height: 1.2; }
+.card-about { font-family: var(--sans); font-size: 13px; color: var(--muted); line-height: 1.5; }
+.card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.card-note {
+  font-family: var(--sans); font-size: 12.5px; color: var(--ink); margin-top: 2px; line-height: 1.5;
+  white-space: pre-line; background: var(--coral-soft); border-left: 3px solid var(--coral); padding: 8px 11px; border-radius: 6px;
+}
+.card-divider { border: none; border-top: 2px dashed var(--ink); margin: 2px 0; opacity: 0.5; }
+.card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.card-link { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--coral); text-decoration: none; }
+.card-link:hover { text-decoration: underline; }
+.card-link.disabled { color: #B9B6AC; }
+.card-edit-row { display: none; gap: 6px; }
+.card-edit-row button {
+  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  background: white; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px;
+  cursor: pointer; color: var(--ink); transition: all 0.15s;
+}
+.card-edit-row button:hover { background: var(--ink); color: white; }
+body.editing .card-edit-row { display: flex; }
+.empty { padding: 90px 20px; text-align: center; font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 22px; color: var(--muted); }
+
+/* TABLE (Brand Prospector) */
+.table-outer { padding: 0 28px 40px; }
+.table-wrap { border: 3px solid var(--ink); border-radius: 18px; background: white; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: var(--yellow); border-bottom: 3px solid var(--ink); }
+th {
+  padding: 12px 16px; text-align: left; font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); cursor: pointer; user-select: none; white-space: nowrap;
+}
+th .arr { margin-left: 4px; opacity: 0.5; }
+th.sorted .arr { opacity: 1; }
+tbody { counter-reset: rowcounter; }
+tbody tr { border-bottom: 2px solid #EDE6D8; cursor: pointer; transition: background 0.1s; }
+tbody tr:not(.exp-row) { counter-increment: rowcounter; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #FBF7EE; }
+td { padding: 14px 16px; vertical-align: top; }
+tbody tr:not(.exp-row) td:first-child { position: relative; padding-left: 46px; }
+tbody tr:not(.exp-row) td:first-child::before {
+  content: counter(rowcounter, decimal-leading-zero);
+  position: absolute; left: 14px; top: 15px;
+  font-family: var(--mono); font-size: 9.5px; font-weight: 700; color: white;
+  background: var(--ink); border-radius: 999px; padding: 3px 8px;
+}
+.brand-name { font-family: var(--serif); font-weight: 900; font-size: 15px; color: var(--ink); }
+.brand-sub { font-family: var(--sans); font-size: 11px; color: var(--muted); margin-top: 3px; }
+.geo-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.geo-chip {
+  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); background: var(--mint); border: 1.5px solid var(--ink); padding: 2px 8px; border-radius: 999px;
+}
+.sector-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.pub-chips { display: flex; flex-wrap: wrap; gap: 5px; max-width: 220px; }
+.pub-chip {
+  font-family: var(--sans); font-size: 10.5px; font-weight: 600;
+  padding: 2px 9px; background: white; border: 1.5px solid var(--ink); color: var(--ink); white-space: nowrap; border-radius: 999px;
+}
+.count-cell { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--coral); text-align: right; }
+.date-cell { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.05em; padding: 3px 9px; border-radius: 999px; border: 1.5px solid var(--ink);
+}
+.badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.badge-hot  { background: var(--yellow); color: var(--ink); }
+.badge-warm { background: white; color: var(--muted); }
+.badge-cool { background: white; color: var(--muted); opacity: .7; }
+.badge-cold { background: white; color: rgba(20,21,26,0.4); }
+.reuters-badge {
+  display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px;
+  background: var(--ink); color: white; margin-top: 5px; border: 1.5px solid var(--ink);
+}
+.pagination { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 20px 24px 30px; }
+.pg-btn {
+  padding: 6px 13px; border: 2px solid var(--ink); border-radius: 999px; background: white;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink); cursor: pointer; transition: all 0.15s;
+}
+.pg-btn:hover:not(:disabled) { background: var(--ink); color: white; }
+.pg-btn.active { background: var(--ink); color: white; }
+.pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pg-gap { font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 0 4px; }
+
+/* MODAL */
+.overlay {
+  display: none; position: fixed; inset: 0; background: rgba(20,21,26,0.55); z-index: 300;
+  align-items: center; justify-content: center;
+}
+.overlay.show { display: flex; }
+.modal { width: min(500px, 92vw); max-height: 88vh; overflow-y: auto; background: var(--panel); border: 3px solid var(--ink); border-radius: 20px; padding: 26px; }
+.modal h3 { font-family: var(--serif); font-weight: 900; font-size: 21px; margin-bottom: 18px; color: var(--ink); }
+.field { margin-bottom: 13px; }
+.field label { display: block; font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 9px 13px; border-radius: 10px; border: 2px solid var(--ink); background: var(--bg);
+  font-family: var(--sans); font-size: 13.5px; color: var(--ink); outline: none;
+}
+.field textarea { resize: vertical; min-height: 56px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+/* EXPANDED — restyled to match the light Pudding x Reuters theme (was left over from
+   the old dark theme when this panel's CSS was recovered after an earlier bug) */
+.exp-row td {
+  padding: 0; background: var(--bg);
+  border-bottom: 3px solid var(--ink);
+}
+.exp-inner {
+  padding: 24px 26px;
+  display: grid; grid-template-columns: 1fr 1.8fr 1fr; gap: 26px;
+}
+.exp-head {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--coral);
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+}
+.bar-row { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+.bar-name {
+  font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--ink);
+  width:118px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0;
+}
+.bar-track { flex:1; height:6px; background: white; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; }
+.bar-fill  { height:100%; background: var(--coral); }
+.bar-n    { font-family:var(--mono); font-size:11px; font-weight: 700; color: var(--ink); width:26px; text-align:right; flex-shrink:0; }
+.topic-tag {
+  display:inline-block; margin:2px 4px 2px 0;
+  font-family:var(--mono); font-size:9px; font-weight: 700; letter-spacing:0.05em;
+  padding:3px 9px; text-transform:uppercase; border-radius: 999px;
+  border:1.5px solid var(--ink); color: var(--ink); background: white;
+}
+.art-list { display:flex; flex-direction:column; gap:7px; max-height:220px; overflow-y:auto; }
+.art-item {
+  padding:10px 12px; background: white;
+  border: 1.5px solid var(--ink); border-radius: 10px;
+  display:flex; align-items:flex-start; gap:8px;
+  transition: all 0.12s;
+}
+.art-item:hover { border-color: var(--coral); }
+.art-item a {
+  font-family:var(--serif); font-weight: 700; font-size:12.5px;
+  color: var(--ink); text-decoration:none; line-height:1.4; flex:1;
+}
+.art-item a:hover { color: var(--coral); }
+.art-meta {
+  font-family:var(--mono); font-size:9px; color: var(--muted);
+  letter-spacing:0.05em; text-transform:uppercase; margin-top:4px;
+}
+.art-arr { font-size:11px; color: var(--muted); flex-shrink:0; margin-top:2px; }
+.sum-brand {
+  font-family:var(--serif); font-weight:900; font-size:18px; color: var(--ink);
+  line-height:1.2; margin-bottom:4px;
+}
+.sum-sub {
+  font-family:var(--mono); font-size:10px; letter-spacing:0.06em;
+  color: var(--muted); text-transform:uppercase; margin-bottom:14px;
+}
+.sum-geos { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
+.sum-geo {
+  font-family:var(--mono); font-size:9px; font-weight: 700; letter-spacing:0.05em;
+  padding:3px 9px; background: var(--mint); border: 1.5px solid var(--ink); border-radius: 999px;
+  color: var(--ink); text-transform:uppercase;
+}
+.sum-stats { display:flex; gap:24px; margin-bottom:14px; padding-bottom:14px; border-bottom: 2px solid var(--ink); }
+.sum-stat-n {
+  font-family:var(--serif); font-weight:900; font-size:28px;
+  color: var(--coral); letter-spacing:-0.02em; line-height:1;
+}
+.sum-stat-l {
+  font-family:var(--sans); font-size:11px;
+  color: var(--muted); margin-top:3px; line-height:1.3;
+}
+.sum-lede {
+  font-family:var(--sans); font-size:12.5px;
+  color: var(--ink); line-height:1.6;
+}
+.sum-lede strong { color: var(--coral); font-weight: 700; }
+.sum-campaigns {
+  margin-top:10px; font-family:var(--mono); font-size:9px; letter-spacing:0.04em;
+  color: var(--muted); text-transform:uppercase; line-height:1.7;
+}
+
+
+
+
+
+/* PROFILE (shared across all three pages) */
+.profile-modal-note { font-family: var(--sans); font-size: 12.5px; color: var(--muted); margin: -6px 0 16px; line-height: 1.5; }
+.profile-pill-grid { display: flex; flex-wrap: wrap; gap: 7px; max-height: 160px; overflow-y: auto; padding: 2px; }
+.profile-pill {
+  padding: 6px 13px; border-radius: 999px; border: 2px solid var(--ink);
+  background: white; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all 0.15s;
+}
+.profile-pill:hover:not(.active) { background: #F1EAD9; }
+.profile-pill.active { background: var(--ink); color: white; }
+
+</style>
+<style>
+/* Insights-page-specific */
+.hero { padding: 28px 28px 8px; }
+.hero-greeting { font-family: var(--serif); font-weight: 900; font-size: 30px; color: var(--ink); margin-bottom: 6px; }
+.hero-sub { font-family: var(--sans); font-size: 14px; color: var(--muted); max-width: 640px; line-height: 1.5; }
+.hero-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.hero-pill { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; border: 1.5px solid var(--ink); background: white; color: var(--ink); }
+.hero-actions { margin-top: 14px; }
+
+.nudge {
+  margin: 8px 28px 0; padding: 14px 18px; border: 2.5px solid var(--ink); border-radius: 14px;
+  background: var(--yellow); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+}
+.nudge-text { font-family: var(--sans); font-size: 13.5px; font-weight: 600; color: var(--ink); }
+
+.summary-bar { padding: 20px 28px 4px; display: flex; gap: 14px; flex-wrap: wrap; }
+.summary-stat { border: 2.5px solid var(--ink); border-radius: 14px; padding: 12px 20px; background: white; min-width: 140px; }
+.summary-stat-n { font-family: var(--serif); font-weight: 900; font-size: 26px; color: var(--coral); line-height: 1; }
+.summary-stat-l { font-family: var(--sans); font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+.loading, .load-error { padding: 80px 28px; text-align: center; font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 18px; color: var(--muted); }
+.load-error { color: var(--coral); }
+
+.rec-board { padding: 12px 28px 70px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.rec-card {
+  background: var(--panel); border: 3px solid var(--ink); border-radius: 18px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 10px; position: relative;
+}
+.rec-card.pursued { border-color: var(--coral); }
+.rec-n { position: absolute; top: -13px; left: 16px; }
+.rec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 5px; }
+.rec-brand { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--ink); line-height: 1.2; }
+.rec-sub { font-family: var(--sans); font-size: 12px; color: var(--muted); }
+.rec-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rec-stats { display: flex; gap: 18px; margin-top: 2px; }
+.rec-stat-n { font-family: var(--serif); font-weight: 900; font-size: 18px; color: var(--coral); }
+.rec-stat-l { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; }
+.pursued-banner {
+  font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--ink);
+  background: var(--coral-soft); border: 2px solid var(--coral); border-radius: 10px; padding: 8px 12px;
+}
+.empty-recs { padding: 70px 24px; text-align: center; font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 17px; color: var(--muted); background: white; border: 3px solid var(--ink); border-radius: 18px; margin: 12px 28px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="header-wordmark">REUTERS™</span>
+  <span class="header-title">My Insights</span>
+  <a class="header-nav-link" href="index.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">← Brand Prospector</a>
+  <a class="header-nav-link" href="prospects.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">Sales Prospects →</a>
+  <div class="header-meta">
+    <button class="pill-btn" onclick="openProfileEditor()">My Profile</button>
+  </div>
+</header>
+
+<div class="hero" id="hero"></div>
+<div class="nudge" id="nudge" style="display:none">
+  <span class="nudge-text">You skipped your profile setup — recommendations below are unfiltered. Set it up to narrow these to your regions and verticals.</span>
+  <button class="btn solid" onclick="openProfileEditor()">Set up profile</button>
+</div>
+<div class="summary-bar" id="summary-bar" style="display:none"></div>
+<div id="content"><div class="loading">Loading your data…</div></div>
+
+<div class="overlay" id="profile-overlay">
+  <div class="modal" style="width:min(640px,94vw)">
+    <h3>Set up your profile</h3>
+    <p class="profile-modal-note">This personalizes your recommendations on the Insights page — takes about 30 seconds, and it's saved only on this device.</p>
+    <div class="field"><label>Your name</label><input id="prof-name" placeholder="e.g. Dana"></div>
+    <div class="field"><label>Regions you cover</label>
+      <div class="profile-pill-grid" id="prof-regions"></div>
+    </div>
+    <div class="field"><label>Verticals you focus on</label>
+      <div class="profile-pill-grid" id="prof-verticals"></div>
+    </div>
+    <div class="field"><label>Brands you've already run campaigns with (one per line)</label>
+      <textarea id="prof-clients" placeholder="e.g.&#10;Deloitte&#10;UBS"></textarea>
+    </div>
+    <div class="modal-actions">
+      <span class="reset-link" onclick="skipProfile()" style="margin-right:auto">Skip for now</span>
+      <button class="btn solid" onclick="saveProfile()">Save profile</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ---- Shared user profile (localStorage, per-device — same code on all three pages) ----
+const PROFILE_KEY = 'reuters_prospector_profile';
+const REGION_OPTIONS = ['US','Europe','MENA','EMEA','APAC'];
+const VERTICAL_OPTIONS = ['Alcohol','Apparel & Footwear','Automotive','Banking, Finance & Insurance','Beverages','Business & Professional Services','Consumer Electronics','Consumer Products','Content Agency','Cosmetics & Personal Care','Defence & Aerospace','Education','Energy & Utilities','Food','Government','Health & Medical','Home Appliances','Home Furnishings & Decoration','Industrial','Luxury','Media & Entertainment','Non-Profits & NGOs','Online Services & Apps','Petcare','Property','Retail','Sport','Technology','Telecoms & Connectivity','Tobacco, Smoking & Related Products','Toys & Gaming','Trade & Investment','Travel & Tourism'];
+
+function getProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function renderProfileForm(existing) {
+  const regionsEl = document.getElementById('prof-regions');
+  regionsEl.innerHTML = '';
+  REGION_OPTIONS.forEach(r => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'profile-pill' + (existing && existing.regions.includes(r) ? ' active' : '');
+    b.textContent = r;
+    b.onclick = () => b.classList.toggle('active');
+    regionsEl.appendChild(b);
+  });
+  const vertEl = document.getElementById('prof-verticals');
+  vertEl.innerHTML = '';
+  VERTICAL_OPTIONS.forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'profile-pill' + (existing && existing.verticals.includes(v) ? ' active' : '');
+    b.textContent = v;
+    b.onclick = () => b.classList.toggle('active');
+    vertEl.appendChild(b);
+  });
+  document.getElementById('prof-name').value = (existing && existing.name) || '';
+  document.getElementById('prof-clients').value = (existing && existing.clients) ? existing.clients.join('\n') : '';
+}
+
+function saveProfile() {
+  const regions = [...document.querySelectorAll('#prof-regions .profile-pill.active')].map(b => b.textContent);
+  const verticals = [...document.querySelectorAll('#prof-verticals .profile-pill.active')].map(b => b.textContent);
+  const clients = document.getElementById('prof-clients').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const name = document.getElementById('prof-name').value.trim();
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, regions, verticals, clients }));
+  document.getElementById('profile-overlay').classList.remove('show');
+  if (typeof onProfileSaved === 'function') onProfileSaved();
+}
+
+function skipProfile() {
+  document.getElementById('profile-overlay').classList.remove('show');
+}
+
+function openProfileEditor() {
+  renderProfileForm(getProfile() || { regions: [], verticals: [], clients: [] });
+  document.getElementById('profile-overlay').classList.add('show');
+}
+
+function initProfileGate() {
+  if (!getProfile()) {
+    renderProfileForm(null);
+    document.getElementById('profile-overlay').classList.add('show');
+  }
+}
+initProfileGate();
+
+
+function onProfileSaved() { loadEverything(); }
+
+function findJsonEnd(text, start) {
+  let inString = false, escape = false, depth = 0;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === '\\\\') escape = true;
+      else if (ch === '"') inString = false;
+    } else {
+      if (ch === '"') inString = true;
+      else if (ch === '{' || ch === '[') depth++;
+      else if (ch === '}' || ch === ']') { depth--; if (depth === 0) return i + 1; }
+    }
+  }
+  throw new Error('Could not find end of data block');
+}
+
+async function fetchEmbeddedVar(url, marker) {
+  const resp = await fetch(url, { cache: 'no-store' });
+  if (!resp.ok) throw new Error(`Could not load ${url} (${resp.status})`);
+  const text = await resp.text();
+  const start = text.indexOf(marker);
+  if (start === -1) throw new Error(`Could not find "${marker}" in ${url}`);
+  const jsonStart = start + marker.length;
+  const end = findJsonEnd(text, jsonStart);
+  return JSON.parse(text.slice(jsonStart, end));
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function computeRecommendations(brandData, prospects, profile) {
+  const clientNamesLower = new Set((profile.clients || []).map(c => c.trim().toLowerCase()));
+  const regions = profile.regions || [];
+  const verticals = profile.verticals || [];
+
+  let candidates = brandData.brands.filter(b => {
+    if (b.reuters_client) return false;
+    if (clientNamesLower.has(b.brand.trim().toLowerCase())) return false;
+    if (regions.length && !b.geos.some(g => regions.includes(g))) return false;
+    if (verticals.length && !verticals.includes(b.sector)) return false;
+    return true;
+  });
+
+  candidates.sort((a, b) => b.recent_90d - a.recent_90d || b.total_activity - a.total_activity);
+  candidates = candidates.slice(0, 24);
+
+  const pipelineMap = new Map();
+  for (const p of prospects) {
+    const key = p.brand.trim().toLowerCase();
+    if (!pipelineMap.has(key)) pipelineMap.set(key, []);
+    pipelineMap.get(key).push({ rep: p.rep, month: p.month });
+  }
+
+  return candidates.map(b => ({ ...b, pipelineHits: pipelineMap.get(b.brand.trim().toLowerCase()) || [] }));
+}
+
+function renderHero(profile) {
+  const hero = document.getElementById('hero');
+  const name = (profile && profile.name) ? profile.name : 'there';
+  hero.innerHTML = `
+    <div class="hero-greeting">Hey ${escapeHtml(name)} — here's where to look</div>
+    <div class="hero-sub">Ranked from live competitor-publisher data: brands not yet on Reuters, matching your focus, with the most recent buying activity first.</div>
+    <div class="hero-pills" id="hero-pills"></div>
+  `;
+  const pillsEl = document.getElementById('hero-pills');
+  const regions = (profile && profile.regions) || [];
+  const verticals = (profile && profile.verticals) || [];
+  if (!regions.length && !verticals.length) {
+    pillsEl.innerHTML = `<span class="hero-pill">All regions</span><span class="hero-pill">All verticals</span>`;
+  } else {
+    pillsEl.innerHTML = [...regions, ...verticals].map(v => `<span class="hero-pill">${escapeHtml(v)}</span>`).join('');
+  }
+}
+
+function renderSummary(recs) {
+  const bar = document.getElementById('summary-bar');
+  bar.style.display = 'flex';
+  const totalArticles = recs.reduce((s, r) => s + r.total_activity, 0);
+  const pursuedCount = recs.filter(r => r.pipelineHits.length > 0).length;
+  bar.innerHTML = `
+    <div class="summary-stat"><div class="summary-stat-n">${recs.length}</div><div class="summary-stat-l">recommended prospects</div></div>
+    <div class="summary-stat"><div class="summary-stat-n">${totalArticles.toLocaleString()}</div><div class="summary-stat-l">competitor articles among them</div></div>
+    <div class="summary-stat"><div class="summary-stat-n">${pursuedCount}</div><div class="summary-stat-l">already in a teammate's pipeline</div></div>
+  `;
+}
+
+function renderRecs(recs) {
+  const content = document.getElementById('content');
+  if (recs.length === 0) {
+    content.innerHTML = `<div class="empty-recs">No matches for this combination of regions and verticals yet — try widening your profile.</div>`;
+    return;
+  }
+  const board = document.createElement('div');
+  board.className = 'rec-board';
+  recs.forEach((b, i) => {
+    const card = document.createElement('div');
+    card.className = 'rec-card' + (b.pipelineHits.length > 0 ? ' pursued' : '');
+    const topPubs = Object.entries(b.publishers).sort((a, c) => c[1] - a[1]).slice(0, 3).map(([p]) => `<span class="tag-yellow">${escapeHtml(p)}</span>`).join('');
+    const pursuedHtml = b.pipelineHits.length > 0
+      ? `<div class="pursued-banner">⚠ Already being pursued by ${escapeHtml([...new Set(b.pipelineHits.map(h => h.rep))].join(', '))}</div>`
+      : '';
+    card.innerHTML = `
+      <span class="n-badge rec-n">#${String(i + 1).padStart(3, '0')}</span>
+      <div class="rec-top">
+        <div class="rec-brand">${escapeHtml(b.brand)}</div>
+        <span class="tag-mint">${escapeHtml(b.country)}</span>
+      </div>
+      <div class="rec-sub">${escapeHtml(b.sector)} — ${escapeHtml(b.sub_sector)}</div>
+      <div class="rec-meta">${topPubs}</div>
+      <div class="rec-stats">
+        <div><div class="rec-stat-n">${b.total_activity}</div><div class="rec-stat-l">articles</div></div>
+        <div><div class="rec-stat-n">${b.recent_90d}</div><div class="rec-stat-l">last 90d</div></div>
+        <div><div class="rec-stat-n">${escapeHtml(b.last_active)}</div><div class="rec-stat-l">last seen</div></div>
+      </div>
+      ${pursuedHtml}
+    `;
+    board.appendChild(card);
+  });
+  content.innerHTML = '';
+  content.appendChild(board);
+}
+
+async function loadEverything() {
+  document.getElementById('content').innerHTML = '<div class="loading">Loading your data…</div>';
+  const profile = getProfile() || { regions: [], verticals: [], clients: [] };
+  renderHero(profile);
+  document.getElementById('nudge').style.display = getProfile() ? 'none' : 'flex';
+
+  try {
+    const [brandData, prospects] = await Promise.all([
+      fetchEmbeddedVar('index.html', 'const DATA = '),
+      fetchEmbeddedVar('prospects.html', 'const PROSPECTS = '),
+    ]);
+    const recs = computeRecommendations(brandData, prospects, profile);
+    renderSummary(recs);
+    renderRecs(recs);
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div class="load-error">Couldn't load live data (${escapeHtml(e.message)}). This page needs to run from the hosted site — commit and push both index.html and prospects.html alongside this one, then reload.</div>`;
+  }
+}
+
+loadEverything();
+</script>
+</body>
+</html>
