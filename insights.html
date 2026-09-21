@@ -405,7 +405,8 @@ tbody tr:not(.exp-row) td:first-child::before {
 <header class="header">
   <span class="header-wordmark">REUTERS™</span>
   <span class="header-title">My Insights</span>
-  <a class="header-nav-link" href="index.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">← Brand Prospector</a>
+  <a class="header-nav-link" href="index.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">← Home</a>
+  <a class="header-nav-link" href="brand-prospector.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">Brand Prospector</a>
   <a class="header-nav-link" href="prospects.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">Sales Prospects →</a>
   <div class="header-meta">
     <button class="pill-btn" onclick="openProfileEditor()">My Profile</button>
@@ -642,14 +643,14 @@ async function loadEverything() {
 
   try {
     const [brandData, prospects] = await Promise.all([
-      fetchEmbeddedVar('index.html', 'const DATA = '),
+      fetchEmbeddedVar('brand-prospector.html', 'const DATA = '),
       fetchEmbeddedVar('prospects.html', 'const PROSPECTS = '),
     ]);
     const recs = computeRecommendations(brandData, prospects, profile);
     renderSummary(recs);
     renderRecs(recs);
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div class="load-error">Couldn't load live data (${escapeHtml(e.message)}). This page needs to run from the hosted site — commit and push both index.html and prospects.html alongside this one, then reload.</div>`;
+    document.getElementById('content').innerHTML = `<div class="load-error">Couldn't load live data (${escapeHtml(e.message)}). This page needs to run from the hosted site — commit and push brand-prospector.html and prospects.html alongside this one, then reload.</div>`;
   }
 }
 
