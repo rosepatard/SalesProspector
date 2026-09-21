@@ -343,6 +343,18 @@ tbody tr:not(.exp-row) td:first-child::before {
 
 
 
+
+/* PROFILE (shared across all three pages) */
+.profile-modal-note { font-family: var(--sans); font-size: 12.5px; color: var(--muted); margin: -6px 0 16px; line-height: 1.5; }
+.profile-pill-grid { display: flex; flex-wrap: wrap; gap: 7px; max-height: 160px; overflow-y: auto; padding: 2px; }
+.profile-pill {
+  padding: 6px 13px; border-radius: 999px; border: 2px solid var(--ink);
+  background: white; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all 0.15s;
+}
+.profile-pill:hover:not(.active) { background: #F1EAD9; }
+.profile-pill.active { background: var(--ink); color: white; }
+
 </style>
 </head>
 <body>
@@ -351,8 +363,10 @@ tbody tr:not(.exp-row) td:first-child::before {
   <span class="header-wordmark">REUTERS™</span>
   <span class="header-title">Sales Prospects</span>
   <a class="header-nav-link" href="index.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">← Brand Prospector</a>
+  <a class="header-nav-link" href="insights.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">My Insights →</a>
   <div class="header-meta">
     <button class="pill-btn" id="edit-toggle" onclick="toggleEdit()">Edit mode: off</button>
+    <button class="pill-btn" onclick="openProfileEditor()">My Profile</button>
   </div>
 </header>
 
@@ -619,6 +633,93 @@ function downloadUpdated() {
 }
 
 render();
+</script>
+<div class="overlay" id="profile-overlay">
+  <div class="modal" style="width:min(640px,94vw)">
+    <h3>Set up your profile</h3>
+    <p class="profile-modal-note">This personalizes your recommendations on the Insights page — takes about 30 seconds, and it's saved only on this device.</p>
+    <div class="field"><label>Your name</label><input id="prof-name" placeholder="e.g. Dana"></div>
+    <div class="field"><label>Regions you cover</label>
+      <div class="profile-pill-grid" id="prof-regions"></div>
+    </div>
+    <div class="field"><label>Verticals you focus on</label>
+      <div class="profile-pill-grid" id="prof-verticals"></div>
+    </div>
+    <div class="field"><label>Brands you've already run campaigns with (one per line)</label>
+      <textarea id="prof-clients" placeholder="e.g.&#10;Deloitte&#10;UBS"></textarea>
+    </div>
+    <div class="modal-actions">
+      <span class="reset-link" onclick="skipProfile()" style="margin-right:auto">Skip for now</span>
+      <button class="btn solid" onclick="saveProfile()">Save profile</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Shared user profile (localStorage, per-device — same code on all three pages) ----
+const PROFILE_KEY = 'reuters_prospector_profile';
+const REGION_OPTIONS = ['US','Europe','MENA','EMEA','APAC'];
+const VERTICAL_OPTIONS = ['Alcohol','Apparel & Footwear','Automotive','Banking, Finance & Insurance','Beverages','Business & Professional Services','Consumer Electronics','Consumer Products','Content Agency','Cosmetics & Personal Care','Defence & Aerospace','Education','Energy & Utilities','Food','Government','Health & Medical','Home Appliances','Home Furnishings & Decoration','Industrial','Luxury','Media & Entertainment','Non-Profits & NGOs','Online Services & Apps','Petcare','Property','Retail','Sport','Technology','Telecoms & Connectivity','Tobacco, Smoking & Related Products','Toys & Gaming','Trade & Investment','Travel & Tourism'];
+
+function getProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function renderProfileForm(existing) {
+  const regionsEl = document.getElementById('prof-regions');
+  regionsEl.innerHTML = '';
+  REGION_OPTIONS.forEach(r => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'profile-pill' + (existing && existing.regions.includes(r) ? ' active' : '');
+    b.textContent = r;
+    b.onclick = () => b.classList.toggle('active');
+    regionsEl.appendChild(b);
+  });
+  const vertEl = document.getElementById('prof-verticals');
+  vertEl.innerHTML = '';
+  VERTICAL_OPTIONS.forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'profile-pill' + (existing && existing.verticals.includes(v) ? ' active' : '');
+    b.textContent = v;
+    b.onclick = () => b.classList.toggle('active');
+    vertEl.appendChild(b);
+  });
+  document.getElementById('prof-name').value = (existing && existing.name) || '';
+  document.getElementById('prof-clients').value = (existing && existing.clients) ? existing.clients.join('\n') : '';
+}
+
+function saveProfile() {
+  const regions = [...document.querySelectorAll('#prof-regions .profile-pill.active')].map(b => b.textContent);
+  const verticals = [...document.querySelectorAll('#prof-verticals .profile-pill.active')].map(b => b.textContent);
+  const clients = document.getElementById('prof-clients').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const name = document.getElementById('prof-name').value.trim();
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, regions, verticals, clients }));
+  document.getElementById('profile-overlay').classList.remove('show');
+  if (typeof onProfileSaved === 'function') onProfileSaved();
+}
+
+function skipProfile() {
+  document.getElementById('profile-overlay').classList.remove('show');
+}
+
+function openProfileEditor() {
+  renderProfileForm(getProfile() || { regions: [], verticals: [], clients: [] });
+  document.getElementById('profile-overlay').classList.add('show');
+}
+
+function initProfileGate() {
+  if (!getProfile()) {
+    renderProfileForm(null);
+    document.getElementById('profile-overlay').classList.add('show');
+  }
+}
+initProfileGate();
+
 </script>
 </body>
 </html>
