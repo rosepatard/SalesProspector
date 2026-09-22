@@ -652,9 +652,6 @@ render();
     <div class="field"><label>Verticals you focus on</label>
       <div class="profile-pill-grid" id="prof-verticals"></div>
     </div>
-    <div class="field"><label>Brands you've already run campaigns with (one per line)</label>
-      <textarea id="prof-clients" placeholder="e.g.&#10;Deloitte&#10;UBS"></textarea>
-    </div>
     <div class="modal-actions">
       <span class="reset-link" onclick="skipProfile()" style="margin-right:auto">Skip for now</span>
       <button class="btn solid" onclick="saveProfile()">Save profile</button>
@@ -697,15 +694,13 @@ function renderProfileForm(existing) {
     vertEl.appendChild(b);
   });
   document.getElementById('prof-name').value = (existing && existing.name) || '';
-  document.getElementById('prof-clients').value = (existing && existing.clients) ? existing.clients.join('\n') : '';
 }
 
 function saveProfile() {
   const regions = [...document.querySelectorAll('#prof-regions .profile-pill.active')].map(b => b.textContent);
   const verticals = [...document.querySelectorAll('#prof-verticals .profile-pill.active')].map(b => b.textContent);
-  const clients = document.getElementById('prof-clients').value.split('\n').map(s => s.trim()).filter(Boolean);
   const name = document.getElementById('prof-name').value.trim();
-  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, regions, verticals, clients }));
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, regions, verticals }));
   document.getElementById('profile-overlay').classList.remove('show');
   if (typeof onProfileSaved === 'function') onProfileSaved();
 }
