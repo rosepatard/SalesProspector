@@ -404,6 +404,7 @@ tbody tr:not(.exp-row) td:first-child::before {
 .rec-stats { display: flex; gap: 18px; margin-top: 2px; }
 .rec-stat-n { font-family: var(--serif); font-weight: 900; font-size: 18px; color: var(--coral); }
 .rec-stat-l { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; }
+.rec-footer { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--rule); }
 .pursued-banner {
   font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--ink);
   background: var(--coral-soft); border: 2px solid var(--coral); border-radius: 10px; padding: 8px 12px;
@@ -640,6 +641,10 @@ function renderRecs(recs) {
     const pursuedHtml = b.pipelineHits.length > 0
       ? `<div class="pursued-banner">⚠ Already being pursued by ${escapeHtml([...new Set(b.pipelineHits.map(h => h.rep))].join(', '))}</div>`
       : '';
+    const latestArticle = (b.articles && b.articles.length > 0) ? b.articles[0] : null;
+    const linkHtml = latestArticle && latestArticle.url
+      ? `<a class="card-link" href="${escapeHtml(latestArticle.url)}" target="_blank" rel="noopener">View content →</a>`
+      : `<span class="card-link disabled">No link on file</span>`;
     card.innerHTML = `
       <span class="n-badge rec-n">#${String(i + 1).padStart(3, '0')}</span>
       <div class="rec-top">
@@ -653,6 +658,7 @@ function renderRecs(recs) {
         <div><div class="rec-stat-n">${b.recent_90d}</div><div class="rec-stat-l">last 90d</div></div>
         <div><div class="rec-stat-n">${escapeHtml(b.last_active)}</div><div class="rec-stat-l">last seen</div></div>
       </div>
+      <div class="rec-footer">${linkHtml}</div>
       ${pursuedHtml}
     `;
     board.appendChild(card);
