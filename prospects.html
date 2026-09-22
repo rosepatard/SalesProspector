@@ -410,7 +410,7 @@ tbody tr:not(.exp-row) td:first-child::before {
     <datalist id="month-options"></datalist>
     <div class="field"><label>Rep</label>
       <select id="f-rep">
-        <option>Dana</option><option>Emma</option><option>Katurah</option><option>Mena</option><option>APAC</option>
+        <option>Dana</option><option>Emma</option><option>Katurah</option><option>Mena</option><option>APAC</option><option>Chithiran</option>
       </select>
     </div>
     <div class="field"><label>Brand</label><input id="f-brand" placeholder="e.g. Siemens"></div>
@@ -468,8 +468,12 @@ function buildFilterButtons(containerId, values, key) {
   });
 }
 
+// The team roster — kept separate from the data itself so a rep shows up in the filter
+// (and can be assigned a lead) even before they have any prospects logged yet.
+const KNOWN_REPS = ['Dana', 'Emma', 'Katurah', 'Mena', 'APAC', 'Chithiran'];
+
 function render() {
-  const reps = uniqueSorted(PROSPECTS.map(p => p.rep));
+  const reps = uniqueSorted([...KNOWN_REPS, ...PROSPECTS.map(p => p.rep)]);
   const months = uniqueSorted(PROSPECTS.map(p => p.month)).sort((a, b) => monthOrder(a) - monthOrder(b));
 
   buildFilterButtons('rep-filters', reps, 'rep');
