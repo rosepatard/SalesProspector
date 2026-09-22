@@ -492,7 +492,9 @@ function render() {
   document.getElementById('results-count').textContent = items.length;
   document.getElementById('results-total').textContent = PROSPECTS.length;
 
-  items.sort((a, b) => a.rep.localeCompare(b.rep) || monthOrder(b.month) - monthOrder(a.month) || a.brand.localeCompare(b.brand));
+  // Within each rep, keep the order things were actually logged in — not re-sorted by
+  // month or brand name — so the list reads as a running log, not a shuffled table.
+  items.sort((a, b) => a.rep.localeCompare(b.rep) || a.id - b.id);
 
   const board = document.getElementById('board');
   board.innerHTML = '';
