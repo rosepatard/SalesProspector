@@ -379,10 +379,14 @@ tbody tr:not(.exp-row) td:first-child::before {
 .trends-section { padding: 4px 28px 8px; }
 .trends-heading { font-family: var(--bask); font-weight: 700; font-size: 17px; color: var(--green); margin-bottom: 4px; }
 .trends-sub { font-family: var(--cond); font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
-.trends-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+.trends-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 18px; align-items: start; }
 .trends-panel { background: white; border: 2px solid var(--green); border-radius: 14px; padding: 18px 20px; box-shadow: 3px 3px 0 var(--green); }
 .trends-panel-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--orange); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 2px solid var(--green); }
 .trends-empty { font-family: var(--cond); font-size: 12.5px; color: var(--muted); font-style: italic; }
+.headline-item { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.headline-item:last-child { border-bottom: none; }
+.headline-title { font-family: var(--bask); font-style: italic; font-size: 12.5px; color: var(--green); line-height: 1.4; }
+.headline-meta { font-family: var(--mono); font-size: 9px; letter-spacing: 0.04em; color: var(--muted); text-transform: uppercase; margin-top: 3px; }
 .loading, .load-error { padding: 80px 28px; text-align: center; font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 18px; color: var(--muted); }
 .load-error { color: var(--coral); }
 
@@ -428,15 +432,19 @@ tbody tr:not(.exp-row) td:first-child::before {
 <div class="summary-bar" id="summary-bar" style="display:none"></div>
 <div class="trends-section" id="trends-section" style="display:none">
   <div class="trends-heading">What's trending in your space</div>
-  <div class="trends-sub">Across every brand active here — clients and prospects both — not just the whitespace list below.</div>
+  <div class="trends-sub">Across every brand active here — clients and prospects both. Phrases and headlines are pulled from real campaign names and article titles, not generic category tags.</div>
   <div class="trends-grid">
     <div class="trends-panel">
       <div class="trends-panel-head">Publisher breakdown</div>
       <div id="trends-publishers"></div>
     </div>
     <div class="trends-panel">
-      <div class="trends-panel-head">Popular themes</div>
-      <div id="trends-topics"></div>
+      <div class="trends-panel-head">What they're talking about</div>
+      <div id="trends-phrases"></div>
+    </div>
+    <div class="trends-panel">
+      <div class="trends-panel-head">Recent headlines</div>
+      <div id="trends-headlines"></div>
     </div>
   </div>
 </div>
@@ -657,6 +665,28 @@ function renderRecs(recs) {
   content.appendChild(board);
 }
 
+// Common words stripped before phrase-extraction so what's left is the substance of the
+// headline, not its grammar. Deliberately not stemmed/lemmatized — kept simple and readable.
+const STOPWORDS = new Set(['the','of','in','and','to','a','how','why','is','are','for','with',
+  'on','at','from','its','this','that','can','will','new','what','when','your','our','their',
+  'more','than','into','across','be','as','an','or','not','no','but','has','have','had','do',
+  'does','did','you','we','they','he','she','it','i','my','us','get','gets','getting','who',
+  'which','these','those','been','being','was','were','if','so','up','out','about','all','just',
+  'like','made','make','making','one','two','three','now','still','here','there','why','where',
+  'while','over','after','before','between','without','through','could','would','should','it\u2019s',
+  'brandvoice','sponsored','partner','content','paidpost','advertorial','insights']);
+
+function extractBigrams(text) {
+  const words = String(text).toLowerCase().replace(/[\u2019']/g, '').replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const bigrams = [];
+  for (let i = 0; i < words.length - 1; i++) {
+    const w1 = words[i], w2 = words[i + 1];
+    if (STOPWORDS.has(w1) || STOPWORDS.has(w2) || w1.length < 3 || w2.length < 3) continue;
+    bigrams.push(w1 + ' ' + w2);
+  }
+  return bigrams;
+}
+
 function computeTrends(brandData, profile) {
   const regions = profile.regions || [];
   const verticals = profile.verticals || [];
@@ -670,26 +700,50 @@ function computeTrends(brandData, profile) {
   });
 
   const publisherTotals = new Map();
-  const topicTotals = new Map();
+  const phraseTotals = new Map();
+  const headlines = [];
+
   for (const b of inScope) {
     for (const [pub, count] of Object.entries(b.publishers || {})) {
       publisherTotals.set(pub, (publisherTotals.get(pub) || 0) + count);
     }
-    for (const topic of (b.top_topics || [])) {
-      topicTotals.set(topic, (topicTotals.get(topic) || 0) + 1);
+    // Pull phrases from real campaign names and article titles — the brand's own words —
+    // rather than Contalto's broad category tags, which are the same handful of labels
+    // for almost every brand in a sector regardless of what they're actually saying.
+    for (const campaign of (b.campaigns || [])) {
+      for (const bg of extractBigrams(campaign)) phraseTotals.set(bg, (phraseTotals.get(bg) || 0) + 1);
+    }
+    for (const article of (b.articles || [])) {
+      for (const bg of extractBigrams(article.title)) phraseTotals.set(bg, (phraseTotals.get(bg) || 0) + 1);
+    }
+    // One headline per brand — its most recent piece — so the feed reflects breadth
+    // across brands rather than one prolific brand crowding everything else out.
+    if (b.articles && b.articles.length > 0) {
+      headlines.push({ ...b.articles[0], brand: b.brand });
     }
   }
 
   const topPublishers = [...publisherTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const topTopics = [...topicTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const topPhrases = [...phraseTotals.entries()].filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-  return { topPublishers, topTopics, brandCount: inScope.length };
+  const monthOrder = (m) => {
+    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const parts = String(m).toLowerCase().split(' ');
+    const mi = months.indexOf(parts[0]);
+    const yr = parseInt(parts[1], 10) || 0;
+    return yr * 12 + (mi === -1 ? 0 : mi);
+  };
+  headlines.sort((a, b) => monthOrder(b.date) - monthOrder(a.date));
+  const recentHeadlines = headlines.slice(0, 8);
+
+  return { topPublishers, topPhrases, recentHeadlines, brandCount: inScope.length };
 }
 
 function renderTrends(trends) {
   const section = document.getElementById('trends-section');
   const pubEl = document.getElementById('trends-publishers');
-  const topicEl = document.getElementById('trends-topics');
+  const phraseEl = document.getElementById('trends-phrases');
+  const headlineEl = document.getElementById('trends-headlines');
 
   if (trends.brandCount === 0) {
     section.style.display = 'none';
@@ -710,10 +764,21 @@ function renderTrends(trends) {
     `).join('');
   }
 
-  if (trends.topTopics.length === 0) {
-    topicEl.innerHTML = '<div class="trends-empty">No theme data in this scope.</div>';
+  if (trends.topPhrases.length === 0) {
+    phraseEl.innerHTML = '<div class="trends-empty">Not enough repeated language in this scope to surface a pattern yet.</div>';
   } else {
-    topicEl.innerHTML = trends.topTopics.map(([name]) => `<span class="topic-tag">${escapeHtml(name)}</span>`).join('');
+    phraseEl.innerHTML = trends.topPhrases.map(([name]) => `<span class="topic-tag">${escapeHtml(name)}</span>`).join('');
+  }
+
+  if (trends.recentHeadlines.length === 0) {
+    headlineEl.innerHTML = '<div class="trends-empty">No recent articles in this scope.</div>';
+  } else {
+    headlineEl.innerHTML = trends.recentHeadlines.map(h => `
+      <div class="headline-item">
+        <div class="headline-title">${escapeHtml(h.title)}</div>
+        <div class="headline-meta">${escapeHtml(h.brand)} · ${escapeHtml(h.publisher)} · ${escapeHtml(h.date)}</div>
+      </div>
+    `).join('');
   }
 }
 
