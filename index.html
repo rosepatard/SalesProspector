@@ -138,11 +138,10 @@ function renderQuestionnaire(existing) {
   stage.innerHTML = `
     <div class="q-eyebrow">Before we begin</div>
     <div class="q-title">Tell us who you are.</div>
-    <div class="q-sub">This personalizes what you see across the tools — your regions, your verticals, the brands you've already worked with. Takes about 30 seconds, saved only on this device.</div>
+    <div class="q-sub">This personalizes what you see across the tools — your regions, your verticals. Takes about 30 seconds, saved only on this device.</div>
     <div class="field"><label>Your name</label><input id="q-name" placeholder="e.g. Dana"></div>
     <div class="field"><label>Regions you cover</label><div class="pill-grid" id="q-regions"></div></div>
     <div class="field"><label>Verticals you focus on</label><div class="pill-grid" id="q-verticals"></div></div>
-    <div class="field"><label>Brands you've already run campaigns with (one per line)</label><textarea id="q-clients" placeholder="e.g.&#10;Deloitte&#10;UBS"></textarea></div>
     <div class="q-actions">
       <span class="q-skip" onclick="skipToWelcome()">Skip for now</span>
       <button class="q-submit" onclick="submitQuestionnaire()">Enter →</button>
@@ -168,16 +167,14 @@ function renderQuestionnaire(existing) {
   });
   if (existing) {
     document.getElementById('q-name').value = existing.name || '';
-    document.getElementById('q-clients').value = (existing.clients || []).join('\n');
   }
 }
 
 function submitQuestionnaire() {
   const regions = [...document.querySelectorAll('#q-regions .q-pill.active')].map(b => b.textContent);
   const verticals = [...document.querySelectorAll('#q-verticals .q-pill.active')].map(b => b.textContent);
-  const clients = document.getElementById('q-clients').value.split('\n').map(s => s.trim()).filter(Boolean);
   const name = document.getElementById('q-name').value.trim();
-  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, regions, verticals, clients }));
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, regions, verticals }));
   renderWelcome();
 }
 
