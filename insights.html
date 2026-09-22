@@ -376,6 +376,13 @@ tbody tr:not(.exp-row) td:first-child::before {
 .summary-stat-n { font-family: var(--serif); font-weight: 900; font-size: 26px; color: var(--coral); line-height: 1; }
 .summary-stat-l { font-family: var(--sans); font-size: 11.5px; color: var(--muted); margin-top: 4px; }
 
+.trends-section { padding: 4px 28px 8px; }
+.trends-heading { font-family: var(--bask); font-weight: 700; font-size: 17px; color: var(--green); margin-bottom: 4px; }
+.trends-sub { font-family: var(--cond); font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+.trends-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+.trends-panel { background: white; border: 2px solid var(--green); border-radius: 14px; padding: 18px 20px; box-shadow: 3px 3px 0 var(--green); }
+.trends-panel-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--orange); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 2px solid var(--green); }
+.trends-empty { font-family: var(--cond); font-size: 12.5px; color: var(--muted); font-style: italic; }
 .loading, .load-error { padding: 80px 28px; text-align: center; font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 18px; color: var(--muted); }
 .load-error { color: var(--coral); }
 
@@ -419,6 +426,21 @@ tbody tr:not(.exp-row) td:first-child::before {
   <button class="btn solid" onclick="openProfileEditor()">Set up profile</button>
 </div>
 <div class="summary-bar" id="summary-bar" style="display:none"></div>
+<div class="trends-section" id="trends-section" style="display:none">
+  <div class="trends-heading">What's trending in your space</div>
+  <div class="trends-sub">Across every brand active here — clients and prospects both — not just the whitespace list below.</div>
+  <div class="trends-grid">
+    <div class="trends-panel">
+      <div class="trends-panel-head">Publisher breakdown</div>
+      <div id="trends-publishers"></div>
+    </div>
+    <div class="trends-panel">
+      <div class="trends-panel-head">Popular themes</div>
+      <div id="trends-topics"></div>
+    </div>
+  </div>
+</div>
+
 <div id="content"><div class="loading">Loading your data…</div></div>
 
 <div class="overlay" id="profile-overlay">
@@ -635,6 +657,66 @@ function renderRecs(recs) {
   content.appendChild(board);
 }
 
+function computeTrends(brandData, profile) {
+  const regions = profile.regions || [];
+  const verticals = profile.verticals || [];
+
+  // Trends reflect the whole market in scope — clients and prospects both — not just
+  // the whitespace list, since the point here is "what's happening," not "who to chase."
+  const inScope = brandData.brands.filter(b => {
+    if (regions.length && !b.geos.some(g => regions.includes(g))) return false;
+    if (verticals.length && !verticals.includes(b.sector)) return false;
+    return true;
+  });
+
+  const publisherTotals = new Map();
+  const topicTotals = new Map();
+  for (const b of inScope) {
+    for (const [pub, count] of Object.entries(b.publishers || {})) {
+      publisherTotals.set(pub, (publisherTotals.get(pub) || 0) + count);
+    }
+    for (const topic of (b.top_topics || [])) {
+      topicTotals.set(topic, (topicTotals.get(topic) || 0) + 1);
+    }
+  }
+
+  const topPublishers = [...publisherTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const topTopics = [...topicTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  return { topPublishers, topTopics, brandCount: inScope.length };
+}
+
+function renderTrends(trends) {
+  const section = document.getElementById('trends-section');
+  const pubEl = document.getElementById('trends-publishers');
+  const topicEl = document.getElementById('trends-topics');
+
+  if (trends.brandCount === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  if (trends.topPublishers.length === 0) {
+    pubEl.innerHTML = '<div class="trends-empty">No publisher activity in this scope.</div>';
+  } else {
+    const maxCount = trends.topPublishers[0][1];
+    pubEl.innerHTML = trends.topPublishers.map(([name, count]) => `
+      <div class="bar-row">
+        <div class="bar-name">${escapeHtml(name)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((count / maxCount) * 100)}%"></div></div>
+        <div class="bar-n">${count}</div>
+      </div>
+    `).join('');
+  }
+
+  if (trends.topTopics.length === 0) {
+    topicEl.innerHTML = '<div class="trends-empty">No theme data in this scope.</div>';
+  } else {
+    topicEl.innerHTML = trends.topTopics.map(([name]) => `<span class="topic-tag">${escapeHtml(name)}</span>`).join('');
+  }
+}
+
 async function loadEverything() {
   document.getElementById('content').innerHTML = '<div class="loading">Loading your data…</div>';
   const profile = getProfile() || { regions: [], verticals: [], clients: [] };
@@ -649,8 +731,10 @@ async function loadEverything() {
     const recs = computeRecommendations(brandData, prospects, profile);
     renderSummary(recs);
     renderRecs(recs);
+    renderTrends(computeTrends(brandData, profile));
   } catch (e) {
     document.getElementById('content').innerHTML = `<div class="load-error">Couldn't load live data (${escapeHtml(e.message)}). This page needs to run from the hosted site — commit and push brand-prospector.html and prospects.html alongside this one, then reload.</div>`;
+    document.getElementById('trends-section').style.display = 'none';
   }
 }
 
