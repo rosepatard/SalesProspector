@@ -399,7 +399,9 @@ a.headline-title:hover { color: var(--coral); text-decoration: underline; }
 .rec-n { position: absolute; top: -13px; left: 16px; }
 .rec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 5px; }
 .rec-brand { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--ink); line-height: 1.2; }
+.rec-advertiser { font-family: var(--sans); font-size: 12px; font-style: italic; color: var(--muted); margin-top: -4px; }
 .rec-sub { font-family: var(--sans); font-size: 12px; color: var(--muted); }
+.rec-topics { display: flex; flex-wrap: wrap; gap: 5px; margin-top: -2px; }
 .rec-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rec-stats { display: flex; gap: 18px; margin-top: 2px; }
 .rec-stat-n { font-family: var(--serif); font-weight: 900; font-size: 18px; color: var(--coral); }
@@ -621,12 +623,17 @@ function renderRecs(recs) {
     const linkHtml = latestArticle && latestArticle.url
       ? `<a class="card-link" href="${escapeHtml(latestArticle.url)}" target="_blank" rel="noopener">View content →</a>`
       : `<span class="card-link disabled">No link on file</span>`;
+    const advertiserHtml = (b.advertiser && b.advertiser.trim().toLowerCase() !== b.brand.trim().toLowerCase())
+      ? `<div class="rec-advertiser">via ${escapeHtml(b.advertiser)}</div>` : '';
+    const topicsHtml = (b.top_topics && b.top_topics.length)
+      ? `<div class="rec-topics">${b.top_topics.map(t => `<span class="topic-tag">${escapeHtml(t)}</span>`).join('')}</div>` : '';
     card.innerHTML = `
       <span class="n-badge rec-n">#${String(i + 1).padStart(3, '0')}</span>
       <div class="rec-top">
         <div class="rec-brand">${escapeHtml(b.brand)}</div>
         <span class="tag-mint">${escapeHtml(b.country)}</span>
       </div>
+      ${advertiserHtml}
       <div class="rec-sub">${escapeHtml(b.sector)} — ${escapeHtml(b.sub_sector)}</div>
       <div class="rec-meta">${topPubs}</div>
       <div class="rec-stats">
@@ -634,6 +641,7 @@ function renderRecs(recs) {
         <div><div class="rec-stat-n">${b.recent_90d}</div><div class="rec-stat-l">last 90d</div></div>
         <div><div class="rec-stat-n">${escapeHtml(b.last_active)}</div><div class="rec-stat-l">last seen</div></div>
       </div>
+      ${topicsHtml}
       <div class="rec-footer">${linkHtml}</div>
     `;
     board.appendChild(card);
