@@ -396,7 +396,6 @@ a.headline-title:hover { color: var(--coral); text-decoration: underline; }
   background: var(--panel); border: 3px solid var(--ink); border-radius: 18px; padding: 18px 20px;
   display: flex; flex-direction: column; gap: 10px; position: relative;
 }
-.rec-card.pursued { border-color: var(--coral); }
 .rec-n { position: absolute; top: -13px; left: 16px; }
 .rec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 5px; }
 .rec-brand { font-family: var(--serif); font-weight: 900; font-size: 19px; color: var(--ink); line-height: 1.2; }
@@ -406,11 +405,6 @@ a.headline-title:hover { color: var(--coral); text-decoration: underline; }
 .rec-stat-n { font-family: var(--serif); font-weight: 900; font-size: 18px; color: var(--coral); }
 .rec-stat-l { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; }
 .rec-footer { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--rule); }
-.pursued-banner {
-  font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--ink);
-  background: var(--coral-soft); border: 2px solid var(--coral); border-radius: 10px; padding: 8px 12px;
-}
-.pursued-note { font-family: var(--sans); font-size: 11.5px; font-weight: 400; font-style: italic; color: var(--ink); margin-top: 5px; }
 .empty-recs { padding: 70px 24px; text-align: center; font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 17px; color: var(--muted); background: white; border: 3px solid var(--ink); border-radius: 18px; margin: 12px 28px; }
 </style>
 </head>
@@ -421,7 +415,6 @@ a.headline-title:hover { color: var(--coral); text-decoration: underline; }
   <span class="header-title">My Insights</span>
   <a class="header-nav-link" href="index.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">← Home</a>
   <a class="header-nav-link" href="brand-prospector.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">Brand Prospector</a>
-  <a class="header-nav-link" href="prospects.html" style="font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-decoration: none; padding: 9px 16px; border: 2px solid var(--ink); border-radius: 999px; background: white; transition: all 0.15s;">Sales Prospects →</a>
   <div class="header-meta">
     <button class="pill-btn" onclick="openProfileEditor()">My Profile</button>
   </div>
@@ -567,7 +560,7 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function computeRecommendations(brandData, prospects, profile) {
+function computeRecommendations(brandData, profile) {
   const regions = profile.regions || [];
   const verticals = profile.verticals || [];
 
@@ -579,16 +572,7 @@ function computeRecommendations(brandData, prospects, profile) {
   });
 
   candidates.sort((a, b) => b.recent_90d - a.recent_90d || b.total_activity - a.total_activity);
-  candidates = candidates.slice(0, 24);
-
-  const pipelineMap = new Map();
-  for (const p of prospects) {
-    const key = p.brand.trim().toLowerCase();
-    if (!pipelineMap.has(key)) pipelineMap.set(key, []);
-    pipelineMap.get(key).push({ rep: p.rep, month: p.month, note: p.note });
-  }
-
-  return candidates.map(b => ({ ...b, pipelineHits: pipelineMap.get(b.brand.trim().toLowerCase()) || [] }));
+  return candidates.slice(0, 24);
 }
 
 function renderHero(profile) {
@@ -613,11 +597,11 @@ function renderSummary(recs) {
   const bar = document.getElementById('summary-bar');
   bar.style.display = 'flex';
   const totalArticles = recs.reduce((s, r) => s + r.total_activity, 0);
-  const pursuedCount = recs.filter(r => r.pipelineHits.length > 0).length;
+  const activeNow = recs.filter(r => r.recent_90d > 0).length;
   bar.innerHTML = `
     <div class="summary-stat"><div class="summary-stat-n">${recs.length}</div><div class="summary-stat-l">recommended prospects</div></div>
     <div class="summary-stat"><div class="summary-stat-n">${totalArticles.toLocaleString()}</div><div class="summary-stat-l">competitor articles among them</div></div>
-    <div class="summary-stat"><div class="summary-stat-n">${pursuedCount}</div><div class="summary-stat-l">already in a teammate's pipeline</div></div>
+    <div class="summary-stat"><div class="summary-stat-n">${activeNow}</div><div class="summary-stat-l">active in the last 90 days</div></div>
   `;
 }
 
@@ -631,12 +615,8 @@ function renderRecs(recs) {
   board.className = 'rec-board';
   recs.forEach((b, i) => {
     const card = document.createElement('div');
-    card.className = 'rec-card' + (b.pipelineHits.length > 0 ? ' pursued' : '');
+    card.className = 'rec-card';
     const topPubs = Object.entries(b.publishers).sort((a, c) => c[1] - a[1]).slice(0, 3).map(([p]) => `<span class="tag-yellow">${escapeHtml(p)}</span>`).join('');
-    const pursuedNotes = b.pipelineHits.filter(h => h.note).map(h => `<div class="pursued-note">${escapeHtml(h.rep)}: "${escapeHtml(h.note)}"</div>`).join('');
-    const pursuedHtml = b.pipelineHits.length > 0
-      ? `<div class="pursued-banner">⚠ Already being pursued by ${escapeHtml([...new Set(b.pipelineHits.map(h => h.rep))].join(', '))}${pursuedNotes}</div>`
-      : '';
     const latestArticle = (b.articles && b.articles.length > 0) ? b.articles[0] : null;
     const linkHtml = latestArticle && latestArticle.url
       ? `<a class="card-link" href="${escapeHtml(latestArticle.url)}" target="_blank" rel="noopener">View content →</a>`
@@ -655,7 +635,6 @@ function renderRecs(recs) {
         <div><div class="rec-stat-n">${escapeHtml(b.last_active)}</div><div class="rec-stat-l">last seen</div></div>
       </div>
       <div class="rec-footer">${linkHtml}</div>
-      ${pursuedHtml}
     `;
     board.appendChild(card);
   });
@@ -749,21 +728,30 @@ async function loadEverything() {
   document.getElementById('nudge').style.display = getProfile() ? 'none' : 'flex';
 
   try {
-    const [brandData, prospects] = await Promise.all([
-      fetchEmbeddedVar('brand-prospector.html', 'const DATA = '),
-      fetchEmbeddedVar('prospects.html', 'const PROSPECTS = '),
-    ]);
-    const recs = computeRecommendations(brandData, prospects, profile);
+    const brandData = await fetchEmbeddedVar('brand-prospector.html', 'const DATA = ');
+    const recs = computeRecommendations(brandData, profile);
     renderSummary(recs);
     renderRecs(recs);
     renderTrends(computeTrends(brandData, profile));
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div class="load-error">Couldn't load live data (${escapeHtml(e.message)}). This page needs to run from the hosted site — commit and push brand-prospector.html and prospects.html alongside this one, then reload.</div>`;
+    document.getElementById('content').innerHTML = `<div class="load-error">Couldn't load live data (${escapeHtml(e.message)}). This page needs to run from the hosted site — commit and push brand-prospector.html alongside this one, then reload.</div>`;
     document.getElementById('trends-section').style.display = 'none';
   }
 }
 
 loadEverything();
+
+// ---- Usage tracking: logs a ping (name, page, time) to a Google Sheet ----
+// Replace this with the Web App URL from the Apps Script deployment.
+const TRACKING_ENDPOINT = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+const TRACKING_PAGE_NAME = 'My Insights';
+(function trackVisit() {
+  if (!TRACKING_ENDPOINT || TRACKING_ENDPOINT.indexOf('PASTE_') === 0) return;
+  const profile = getProfile();
+  const name = (profile && profile.name) ? profile.name.trim() : '(no profile set)';
+  const url = TRACKING_ENDPOINT + '?name=' + encodeURIComponent(name) + '&page=' + encodeURIComponent(TRACKING_PAGE_NAME);
+  fetch(url, { mode: 'no-cors' }).catch(() => {});
+})();
 </script>
 </body>
 </html>
