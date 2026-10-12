@@ -195,7 +195,7 @@ function renderWelcome() {
         <div>
           <div class="dest-label">Start here</div>
           <div class="dest-title">My Insights</div>
-          <div class="dest-desc">Your personalized picks — matched to your regions and verticals, cross-checked against the team's pipeline</div>
+          <div class="dest-desc">Your personalized picks — matched to your regions and verticals, ranked by what's moving right now</div>
         </div>
         <div class="dest-arrow">→</div>
       </a>
@@ -204,14 +204,6 @@ function renderWelcome() {
           <div class="dest-label">Explore</div>
           <div class="dest-title">Brand Prospector</div>
           <div class="dest-desc">The full competitive database — every brand, every publisher, every filter</div>
-        </div>
-        <div class="dest-arrow">→</div>
-      </a>
-      <a class="dest-card" href="prospects.html">
-        <div>
-          <div class="dest-label">Track</div>
-          <div class="dest-title">Sales Prospects</div>
-          <div class="dest-desc">The team's active pipeline — who's chasing what, and where things stand</div>
         </div>
         <div class="dest-arrow">→</div>
       </a>
@@ -226,6 +218,18 @@ if (existingProfile) {
 } else {
   renderQuestionnaire(null);
 }
+
+// ---- Usage tracking: logs a ping (name, page, time) to a Google Sheet ----
+// Replace this with the Web App URL from the Apps Script deployment.
+const TRACKING_ENDPOINT = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+const TRACKING_PAGE_NAME = 'Home';
+(function trackVisit() {
+  if (!TRACKING_ENDPOINT || TRACKING_ENDPOINT.indexOf('PASTE_') === 0) return;
+  const profile = getProfile();
+  const name = (profile && profile.name) ? profile.name.trim() : '(no profile set)';
+  const url = TRACKING_ENDPOINT + '?name=' + encodeURIComponent(name) + '&page=' + encodeURIComponent(TRACKING_PAGE_NAME);
+  fetch(url, { mode: 'no-cors' }).catch(() => {});
+})();
 </script>
 </body>
 </html>
