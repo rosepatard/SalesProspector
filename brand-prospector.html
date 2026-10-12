@@ -410,6 +410,12 @@ tbody tr:not(.exp-row) td:first-child::before {
     <select id="publisher-filter" class="filter-select"><option value="">Any publisher</option></select>
   </div>
 
+  <div class="filter-group">
+    <span class="filter-group-label">Last seen</span>
+    <select id="date-from-filter" class="filter-select"><option value="">Any time</option></select>
+    <span style="font-family: var(--mono); font-size: 11px; color: var(--muted);">to</span>
+    <select id="date-to-filter" class="filter-select"><option value="">Any time</option></select>
+  </div>
 
 </div>
 
@@ -458,6 +464,14 @@ let sort={ field:'total_activity', dir:'desc' };
 let page=1; const PER=30;
 let expanded=null, geo='EMEA';
 
+const MONTHS_ORDER = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function monthOrder(m) {
+  const parts = String(m).toLowerCase().split(' ');
+  const mi = MONTHS_ORDER.indexOf(parts[0]);
+  const yr = parseInt(parts[1], 10) || 0;
+  return yr * 12 + (mi === -1 ? 0 : mi);
+}
+
 function init() {
   all = DATA.brands; filtered=[...all];
 
@@ -472,9 +486,18 @@ function init() {
   ['Financial Times','Bloomberg','The Economist','Wall Street Journal','Politico Europe','BBC','CNBC International','CNN International','Forbes','Fortune','Euronews','The Atlantic']
     .forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
 
+  const months = [...new Set(all.map(b=>b.last_active))].sort((a,b)=>monthOrder(a)-monthOrder(b));
+  const dFrom=document.getElementById('date-from-filter'), dTo=document.getElementById('date-to-filter');
+  months.forEach(m=>{
+    const o1=document.createElement('option'); o1.value=m; o1.textContent=m; dFrom.appendChild(o1);
+    const o2=document.createElement('option'); o2.value=m; o2.textContent=m; dTo.appendChild(o2);
+  });
+
   document.getElementById('search').addEventListener('input', filter);
   document.getElementById('sector-filter').addEventListener('change', filter);
   document.getElementById('publisher-filter').addEventListener('change', filter);
+  document.getElementById('date-from-filter').addEventListener('change', filter);
+  document.getElementById('date-to-filter').addEventListener('change', filter);
   document.querySelectorAll('.geo-btn').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('.geo-btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); geo=b.dataset.geo; filter();
@@ -486,11 +509,15 @@ function filter() {
   const q=document.getElementById('search').value.toLowerCase().trim();
   const sec=document.getElementById('sector-filter').value;
   const pub=document.getElementById('publisher-filter').value;
+  const dFrom=document.getElementById('date-from-filter').value;
+  const dTo=document.getElementById('date-to-filter').value;
   filtered=all.filter(b=>{
     if(q && !b.brand.toLowerCase().includes(q) && !b.advertiser.toLowerCase().includes(q)) return false;
     if(sec && b.sector!==sec) return false;
     if(geo && !b.geos.includes(geo)) return false;
     if(pub && !b.publishers[pub]) return false;
+    if(dFrom && monthOrder(b.last_active) < monthOrder(dFrom)) return false;
+    if(dTo && monthOrder(b.last_active) > monthOrder(dTo)) return false;
     return true;
   });
   doSort(); page=1; expanded=null; render();
@@ -500,6 +527,8 @@ function resetFilters() {
   document.getElementById('search').value='';
   document.getElementById('sector-filter').value='';
   document.getElementById('publisher-filter').value='';
+  document.getElementById('date-from-filter').value='';
+  document.getElementById('date-to-filter').value='';
   page=1; expanded=null; geo='EMEA';
   document.querySelectorAll('.geo-btn').forEach(b=>b.classList.toggle('active', b.dataset.geo==='EMEA'));
   filter();
@@ -739,6 +768,7 @@ const TRACKING_PAGE_NAME = 'Brand Prospector';
         <li><strong>Geography</strong> — Global, US, Europe, MENA, EMEA, APAC</li>
         <li><strong>Sector</strong> — narrow to a specific industry</li>
         <li><strong>Publisher</strong> — show only brands active on a specific competitor</li>
+        <li><strong>Last seen</strong> — narrow to a date range, e.g. only brands last active between two specific months</li>
       </ul>
       <p style="margin-bottom:6px"><strong>Reading the table:</strong></p>
       <ul style="margin:0 0 14px 18px; padding:0;">
